@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Town of Banff — Coherent Monthly Traffic &amp; Municipal Waste Forecast Explorer (2018–2027)</title>
+  <meta name="description" content="Interactive MinT-coherent forecasting benchmark and two-stage structural scenario simulator (FX, AB labour, climate, tourism &amp; Zero-Waste) for Town of Banff." />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-alt: #eff3f9;
+      --border: #d9e1ec;
+      --border-subtle: #e8eef6;
+      --text: #0f172a;
+      --muted: #526075;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --primary-fg: #ffffff;
+      --accent-actual: #1e293b;
+      --accent-bridge: #0d9488;
+      --accent-base: #2563eb;
+      --accent-scen: #d97706;
+      --accent-pin: #9333ea;
+      --good: #047857;
+      --good-bg: rgba(5, 150, 105, 0.11);
+      --warn: #b45309;
+      --warn-bg: rgba(217, 119, 6, 0.12);
+      --fwd-band: rgba(37, 99, 235, 0.045);
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --radius: 10px;
+      --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0b1120;
+      --surface: #11192c;
+      --surface-alt: #18233c;
+      --border: #253352;
+      --border-subtle: #1c2842;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --primary-fg: #ffffff;
+      --accent-actual: #cbd5e1;
+      --accent-bridge: #2dd4bf;
+      --accent-base: #60a5fa;
+      --accent-scen: #fbbf24;
+      --accent-pin: #c084fc;
+      --good: #34d399;
+      --good-bg: rgba(52, 211, 153, 0.14);
+      --warn: #fbbf24;
+      --warn-bg: rgba(251, 191, 36, 0.14);
+      --fwd-band: rgba(96, 165, 250, 0.055);
+      --shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 18px 20px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* Header */
+    .top-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--primary);
+    }
+    h1 {
+      margin: 3px 0 4px;
+      font-size: clamp(1.15rem, 2.1vw, 1.46rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .subtitle {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      max-width: 840px;
+    }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+    }
+    .pill-badge {
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .pill-good {
+      background: var(--good-bg);
+      color: var(--good);
+      border-color: transparent;
+      font-weight: 700;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 6px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-fg);
+    }
+    .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--primary-fg); }
+    .btn-pin.active {
+      border-color: var(--accent-pin);
+      color: var(--accent-pin);
+      background: rgba(147, 51, 234, 0.1);
+    }
+
+    /* Navigation Tabs */
+    .tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .tab-actions { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+    .tab-panel { display: none; flex-direction: column; gap: 15px; }
+    .tab-panel.active { display: flex; }
+
+    /* Presets Bar */
+    .presets-box { padding: 13px 16px; display: flex; flex-direction: column; gap: 9px; }
+    .presets-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .section-label { font-size: 12.5px; font-weight: 700; }
+    .preset-desc { font-size: 12px; color: var(--muted); }
+    .preset-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .preset-chip {
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      padding: 5.5px 10.5px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .preset-chip:hover { border-color: var(--primary); }
+    .preset-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-fg);
+    }
+
+    /* 5-Column KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 11px;
+    }
+    .kpi-card { padding: 13px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .kpi-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .kpi-delta {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 5.5px;
+      border-radius: 5px;
+      background: var(--surface-alt);
+      color: var(--muted);
+    }
+    .kpi-delta.good { background: var(--good-bg); color: var(--good); }
+    .kpi-delta.warn { background: var(--warn-bg); color: var(--warn); }
+    .kpi-val { font-size: 1.28rem; font-weight: 700; line-height: 1.2; }
+    .kpi-unit { font-size: 11.5px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+
+    /* Main Workspace Grid */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 345px minmax(0, 1fr);
+      gap: 15px;
+      align-items: start;
+    }
+    .controls-panel { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .panel-head h2 { margin: 0; font-size: 13.5px; font-weight: 700; }
+    .check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .slider-stack { display: flex; flex-direction: column; gap: 9.5px; }
+    .slider-item { display: flex; flex-direction: column; gap: 3px; }
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+    }
+    .slider-row label { color: var(--muted); }
+    .slider-row span { font-weight: 700; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+      height: 5px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .mini-cell {
+      background: var(--surface-alt);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 6px 7.5px;
+      color: var(--muted);
+    }
+    .mini-cell strong { color: var(--text); font-weight: 700; }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+    .chart-card { padding: 12px 13px; display: flex; flex-direction: column; gap: 5px; }
+    .chart-card.wide { grid-column: span 2; }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .chart-title { font-size: 12.5px; font-weight: 700; }
+    .chart-readout { font-size: 11px; color: var(--muted); text-align: right; }
+    canvas.chart-canvas { width: 100%; height: 215px; display: block; cursor: crosshair; touch-action: none; }
+    .chart-card.wide canvas.chart-canvas { height: 195px; }
+
+    /* Legend & Footer Bar */
+    .footer-bar {
+      padding: 11px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .legend-items { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; color: var(--muted); }
+    .leg-item { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+    .swatch-dash { width: 18px; height: 0; border-top: 2.5px dashed var(--accent-scen); display: inline-block; }
+    .swatch-pin { width: 18px; height: 0; border-top: 2.5px dotted var(--accent-pin); display: inline-block; }
+    .swatch-band { width: 16px; height: 10px; border-radius: 2px; background: var(--accent-base); opacity: 0.25; display: inline-block; }
+
+    /* Tables & Documentation Cards */
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .table-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .table-card h3 { margin: 0; font-size: 14px; font-weight: 700; }
+    .table-desc { margin: 0; font-size: 12.5px; color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 7.5px 9.5px;
+      border-bottom: 1px solid var(--border-subtle);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: var(--surface-alt);
+    }
+    td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    tr.win-row { background: var(--good-bg); font-weight: 600; }
+    .win-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: var(--good);
+      color: #fff;
+      margin-left: 6px;
+    }
+    .mint-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: var(--accent-bridge);
+      color: #fff;
+      margin-left: 6px;
+    }
+
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+    .dl-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      border-radius: 9px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .dl-card h4 { margin: 0 0 4px; font-size: 13px; }
+    .dl-card p { margin: 0; font-size: 12px; color: var(--muted); }
+
+    .prose-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+    .prose-box { padding: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+    .prose-box h4 { margin: 0; font-size: 13.5px; color: var(--primary); }
+    .prose-box ul { margin: 0; padding-left: 18px; color: var(--muted); }
+    .prose-box li { margin-bottom: 4px; }
+
+    @media (max-width: 1120px) {
+      .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .sim-layout { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.wide { grid-column: span 1; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .container { padding: 12px 12px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="top-header">
+      <div>
+        <div class="eyebrow">Town of Banff · Civic Analytics &amp; Forecasting Pipeline</div>
+        <h1>Coherent Traffic &amp; Municipal Waste Forecast Explorer (2018–2027)</h1>
+        <p class="subtitle">
+          Two-stage monthly pipeline: Zero Waste Dashboard (2018-01–2024-12), TW Traffic (2013-07–2026-10) (live Tableau + Hwy 1/Park bridge fallback), active Bank of Canada FX + AB Labour + Climate elasticities (DW 1.92–2.43), and MinT-reconciled accounting (<code>Food + Garbage + Other &equiv; Total Collection</code>).
+        </p>
+      </div>
+      <div class="header-actions">
+        <span id="coherenceBadge" class="pill-badge pill-good mono">F+G+O = C (0.000 t)</span>
+        <select id="zoomMode" class="btn" title="Visible Timeline Range">
+          <option value="2024" selected>2024–2027 Outlook</option>
+          <option value="2018">2018–2027 Full Span</option>
+        </select>
+        <select id="piMode" class="btn" title="Conformal Prediction Interval Level">
+          <option value="80" selected>80% Conformal PI</option>
+          <option value="95">95% Conformal PI</option>
+          <option value="none">Hide PI Band</option>
+        </select>
+        <button id="btnTheme" class="btn" type="button">Dark Mode</button>
+        <button id="btnReset" class="btn btn-primary" type="button">Reset Baseline</button>
+      </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <div class="tab-bar">
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" data-tab="sim" role="tab">1. Interactive Scenario Explorer</button>
+        <button class="tab-btn" data-tab="bench" role="tab">2. Model Benchmark, Elasticities &amp; Audit</button>
+        <button class="tab-btn" data-tab="docs" role="tab">3. Methodology &amp; CSV Downloads</button>
+      </div>
+      <div class="tab-actions">
+        <button id="btnPinB" class="btn btn-pin" type="button">Pin as Scenario B</button>
+        <button id="btnCopyLink" class="btn" type="button">Copy Share Link</button>
+        <button id="btnExportActiveCsv" class="btn" type="button">Download Active CSV</button>
+      </div>
+    </div>
+
+    <!-- TAB 1: SCENARIO EXPLORER -->
+    <section id="tab-sim" class="tab-panel active">
+      <div class="card presets-box">
+        <div class="presets-top">
+          <span class="section-label">What-If Scenario Presets (Forward Horizon: 2026-11 &rarr; 2027-12)</span>
+          <span id="presetDesc" class="preset-desc"></span>
+        </div>
+        <div id="presetRow" class="preset-list"></div>
+      </div>
+
+      <div id="kpiGrid" class="kpi-grid"></div>
+
+      <div class="sim-layout">
+        <aside class="card controls-panel">
+          <div class="panel-head">
+            <h2>Scenario Levers (9 Controls)</h2>
+            <label class="check-label">
+              <input id="chkSummerOnly" type="checkbox" />
+              Jun–Sep Only
+            </label>
+          </div>
+          <div id="sliderStack" class="slider-stack"></div>
+
+          <div style="padding-top:9px; border-top:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:7px;">
+            <div class="section-label">AR(1) Structural Elasticities</div>
+            <div id="miniElastGrid" class="mini-grid mono"></div>
+            <p class="preset-desc" style="margin:0; font-size:11.5px;">
+              Policy levers scale cleanly across Food, Garbage, and Other Diversion while strictly preserving <code>Food + Garbage + Other === Total Collection</code>.
+            </p>
+          </div>
+        </aside>
+
+        <main class="charts-grid">
+          <div class="card chart-card">
+            <div class="chart-head">
+              <span class="chart-title">Total Vehicles (vehicles / mo)</span>
+              <span id="hover-v" class="chart-readout mono">Stage 1: Ensemble Top-3</span>
+            </div>
+            <canvas id="chart-v" class="chart-canvas"></canvas>
+          </div>
+
+          <div class="card chart-card">
+            <div class="chart-head">
+              <span class="chart-title">Total Food Waste (tonnes / mo)</span>
+              <span id="hover-f" class="chart-readout mono">Stage 2: MinT Coherent</span>
+            </div>
+            <canvas id="chart-f" class="chart-canvas"></canvas>
+          </div>
+
+          <div class="card chart-card">
+            <div class="chart-head">
+              <span class="chart-title">Total Garbage (tonnes / mo)</span>
+              <span id="hover-g" class="chart-readout mono">Stage 2: MinT Coherent</span>
+            </div>
+            <canvas id="chart-g" class="chart-canvas"></canvas>
+          </div>
+
+          <div class="card chart-card">
+            <div class="chart-head">
+              <span class="chart-title">Other Diversion — 8 Core Streams (t / mo)</span>
+              <span id="hover-o" class="chart-readout mono">Stage 2: MinT Coherent</span>
+            </div>
+            <canvas id="chart-o" class="chart-canvas"></canvas>
+          </div>
+
+          <div class="card chart-card wide">
+            <div class="chart-head">
+              <span class="chart-title">Total Collection — Reconciled 13 Core Streams (tonnes / mo, = Food + Garbage + Other)</span>
+              <span id="hover-c" class="chart-readout mono">MinT Variance-Weighted Total</span>
+            </div>
+            <canvas id="chart-c" class="chart-canvas"></canvas>
+          </div>
+        </main>
+      </div>
+
+      <footer class="card footer-bar">
+        <div class="legend-items">
+          <span class="leg-item"><span class="swatch" style="background:var(--accent-actual)"></span> Observed Actual</span>
+          <span class="leg-item"><span class="swatch" style="background:var(--accent-bridge)"></span> Realized Driver / Bridge</span>
+          <span class="leg-item"><span class="swatch" style="background:var(--accent-base)"></span> Forward Baseline</span>
+          <span class="leg-item"><span class="swatch-band"></span> Conformal PI</span>
+          <span class="leg-item"><span class="swatch-dash"></span> Scenario A</span>
+          <span id="pinLegendItem" class="leg-item" style="display:none;"><span class="swatch-pin"></span> <span id="pinLegendLabel">Scenario B</span></span>
+        </div>
+        <div id="globalHoverBar" class="mono" style="font-size:11.5px;">
+          Hover or touch any chart to inspect monthly values, conformal bounds &amp; accounting sum
+        </div>
+      </footer>
+    </section>
+
+    <!-- TAB 2: MODEL BENCHMARK, ELASTICITIES & AUDIT -->
+    <section id="tab-bench" class="tab-panel">
+      <div class="card table-card">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;">
+          <div>
+            <h3>Two-Stage Expanding-Window Cross-Validation (2022–2024 Common Folds, 36 OOS Months)</h3>
+            <p class="table-desc">Includes all 8 base/ensemble candidates across all 5 modeled series plus out-of-fold <code>MinT_Coherent</code> hierarchical reconciliation (ranked #1 on Total Garbage &amp; Other Diversion).</p>
+          </div>
+          <div id="cvFilterPills" class="filter-pills"></div>
+        </div>
+        <div class="table-wrap">
+          <table id="cvTable">
+            <thead>
+              <tr>
+                <th>Target Series</th>
+                <th>Model Family</th>
+                <th class="num">MAE</th>
+                <th class="num">RMSE</th>
+                <th class="num">MAPE (%)</th>
+                <th class="num">sMAPE (%)</th>
+                <th class="num">MASE</th>
+                <th class="num">Bias (%)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card table-card">
+          <h3>AR(1) Structural Elasticities &amp; Whiteness Diagnostics</h3>
+          <p class="table-desc">Stage-1 uses genuine BoC FX window (<code>2013-12+</code>, <code>n = 155</code>, <code>log_fx_ma3_lag3 = +1.079</code>, <code>AB Unemp = -0.020/pp</code>); Stage-2 links Traffic, Hospitality &amp; Weather cleanly across all 4 waste series.</p>
+          <div class="table-wrap">
+            <table id="diagTable">
+              <thead>
+                <tr>
+                  <th>Target</th>
+                  <th class="num">n</th>
+                  <th class="num">&beta; Traffic</th>
+                  <th class="num">&beta; Temp</th>
+                  <th class="num">&beta; Precip</th>
+                  <th class="num">&beta; Macro/FX</th>
+                  <th class="num">&beta; Unemp</th>
+                  <th class="num">AR(1) &phi;</th>
+                  <th class="num">Log R&sup2;</th>
+                  <th class="num">DW</th>
+                  <th class="num">LB p(12)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <h3>Legacy Splice Audit: Clean 13-Stream Zero Waste vs. Legacy (Tonnes)</h3>
+          <p class="table-desc">Replaces spliced 2018–2023 weigh tickets with uniform Zero Waste Dashboard aggregation, eliminating the +992.7 t 2018 break while matching CY 2024 to 0.000 t.</p>
+          <div class="table-wrap">
+            <table id="auditTable">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th class="num">Clean Coll.</th>
+                  <th class="num">Legacy Coll.</th>
+                  <th class="num">Coll. Diff</th>
+                  <th class="num">Garb. Diff</th>
+                  <th class="num">Food Diff</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: METHODOLOGY & DOWNLOADS -->
+    <section id="tab-docs" class="tab-panel">
+      <div class="card table-card">
+        <h3>Client-Side CSV Data Exports</h3>
+        <p class="table-desc">Download exact pipeline outputs or your current interactive coherent What-If trajectory directly as UTF-8 CSV files.</p>
+        <div class="dl-grid">
+          <div class="dl-card">
+            <div>
+              <h4>Active Scenario Trajectory (2018–2027)</h4>
+              <p>Complete monthly series reflecting your active sliders &amp; exact <code>F+G+O=C</code> accounting.</p>
+            </div>
+            <button id="dlActive" class="btn btn-primary" type="button">Download Active CSV</button>
+          </div>
+          <div class="dl-card">
+            <div>
+              <h4>Baseline + 80% / 95% PIs (2025–2027)</h4>
+              <p>Includes <code>Total Vehicles</code> observed/bridge intervals and MinT-coherent component PIs.</p>
+            </div>
+            <button id="dlBase" class="btn" type="button">Download Baseline CSV</button>
+          </div>
+          <div class="dl-card">
+            <div>
+              <h4>All 6 Canonical Presets — CY 2027 Summary</h4>
+              <p>Annual 2027 totals &amp; percentage deltas vs. Baseline across all 5 tracked metrics.</p>
+            </div>
+            <button id="dlPresets27" class="btn" type="button">Download Scenarios 2027 CSV</button>
+          </div>
+          <div class="dl-card">
+            <div>
+              <h4>Two-Stage CV Benchmark &amp; MinT Metrics</h4>
+              <p>Complete model evaluation summary across all 5 targets &amp; MinT hierarchical reconciliation.</p>
+            </div>
+            <button id="dlCvDiag" class="btn" type="button">Download CV Summary CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prose-grid">
+        <div class="card prose-box">
+          <h4>1. Canonical Data &amp; Coherent 13-Stream Partition</h4>
+          <ul>
+            <li><strong>Mutually Exclusive Partition:</strong> <code>Total Food Waste</code> (2 streams) + <code>Total Garbage</code> (3 streams) + <code>Other Diversion</code> (8 cardboard/paper/recyclables/glass/yard/sundry streams) &equiv; <code>Total Collection</code> (<code>7,281.867 t</code> in CY 2024, <code>0.0000 t</code> gap).</li>
+            <li><strong>MinT Variance Reconciliation:</strong> Closed-form WLS reconciliation scales baseline &amp; CV discrepancies by empirical MSE weights, ranking #1 on Total Garbage and Other Diversion while holding exact additive identity at every month.</li>
+          </ul>
+        </div>
+        <div class="card prose-box">
+          <h4>2. Active Currency, Labour &amp; Nowcast Bridge</h4>
+          <ul>
+            <li><strong>Zero Pre-2017 FX Contamination:</strong> Explicit <code>is_realized_fx</code> provenance restricts Stage-1 econometric FX identification to observed Bank of Canada rates (<code>log_fx_ma3_lag3 = +1.079</code>) and AB Unemployment (<code>-0.020/pp</code>).</li>
+            <li><strong>Live Tableau Sync &amp; Nowcast Bridge Fallback:</strong> Uses explicit <code>is_realized_hwy1</code> provenance and calibrated OOS conformal bounds to bridge Town traffic via Highway 1 / Park Attendance whenever live Tableau counters lag.</li>
+          </ul>
+        </div>
+        <div class="card prose-box">
+          <h4>3. Data-Driven Ensemble &amp; Open Reproducibility</h4>
+          <ul>
+            <li><strong>Expanding Inner-Holdout Ensemble:</strong> Selects &amp; weights Top-3 models per target dynamically by inverse trailing inner-holdout RMSE across <code>SARIMAX_Exo</code>, <code>Ridge_Exo</code>, <code>Hybrid_Ridge_LGBM</code>, and <code>LogAutoETS</code>.</li>
+            <li><strong>Automated CI &amp; Monthly Refresh:</strong> GitHub Actions verifies pytest, Python-vs-JS scenario parity, Google Colab reproducibility, and monthly live Canadian API updates.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ELAST = {"Total Vehicles":{"temp_anom":0.0077480327832274,"log1p_precip":-0.007102167877442,"fx":1.0793751430945868,"unemp":-0.0195967670219828},"Total Food Waste":{"log_vehicles":0.5101234445136903,"temp_anom":-0.0031024524271971,"log1p_precip":0.0202708817682859,"log_foodsvc_real":0.8109242374859135},"Total Garbage":{"log_vehicles":0.430341183799112,"temp_anom":0.0004667972122162,"log1p_precip":-0.0077847472533224,"log_foodsvc_real":0.1641690994152737},"Other Diversion":{"log_vehicles":0.5399665886507699,"temp_anom":-0.0120876746712669,"log1p_precip":0.0212789879137022,"log_foodsvc_real":0.0}};
+    const BASE_FX = 1.4057;
+    const WINNING_MODELS = {"Other Diversion":"MinT_Coherent","Total Collection":"SARIMAX_Exo","Total Food Waste":"MinT_Coherent","Total Garbage":"MinT_Coherent","Total Vehicles":"Ensemble_Top3"};
+    const RAW_DATA = [{"ds":"2018-01","y":2018,"m":1,"ph":"actual","v":417522.0,"f":51.98,"g":359.45,"o":151.02,"c":562.45,"p":15.4,"fx":1.24274},{"ds":"2018-02","y":2018,"m":2,"ph":"actual","v":361002.0,"f":47.15,"g":355.57,"o":105.195,"c":507.915,"p":25.2,"fx":1.25862},{"ds":"2018-03","y":2018,"m":3,"ph":"actual","v":459704.0,"f":79.31,"g":391.0,"o":129.818,"c":600.128,"p":35.9,"fx":1.29317},{"ds":"2018-04","y":2018,"m":4,"ph":"actual","v":431569.0,"f":56.276,"g":402.446,"o":136.798,"c":595.52,"p":23.5,"fx":1.27326},{"ds":"2018-05","y":2018,"m":5,"ph":"actual","v":549014.0,"f":65.94,"g":419.82,"o":192.531,"c":678.291,"p":49.5,"fx":1.28733},{"ds":"2018-06","y":2018,"m":6,"ph":"actual","v":666618.0,"f":73.4,"g":412.9,"o":170.67,"c":656.97,"p":49.6,"fx":1.31286},{"ds":"2018-07","y":2018,"m":7,"ph":"actual","v":859111.0,"f":80.368,"g":472.29,"o":149.338,"c":701.996,"p":23.1,"fx":1.31301},{"ds":"2018-08","y":2018,"m":8,"ph":"actual","v":803476.0,"f":66.14,"g":443.14,"o":140.933,"c":650.213,"p":24.4,"fx":1.30412},{"ds":"2018-09","y":2018,"m":9,"ph":"actual","v":615078.0,"f":57.2,"g":375.11,"o":168.62,"c":600.93,"p":63.5,"fx":1.30365},{"ds":"2018-10","y":2018,"m":10,"ph":"actual","v":451865.0,"f":54.77,"g":406.41,"o":181.121,"c":642.301,"p":26.7,"fx":1.30095},{"ds":"2018-11","y":2018,"m":11,"ph":"actual","v":392159.0,"f":40.23,"g":341.03,"o":129.623,"c":510.883,"p":13.4,"fx":1.32004},{"ds":"2018-12","y":2018,"m":12,"ph":"actual","v":439146.0,"f":47.82,"g":378.7,"o":118.21,"c":544.73,"p":38.4,"fx":1.34318},{"ds":"2019-01","y":2019,"m":1,"ph":"actual","v":426429.0,"f":73.85,"g":399.61,"o":124.439,"c":597.899,"p":20.1,"fx":1.3301},{"ds":"2019-02","y":2019,"m":2,"ph":"actual","v":371420.0,"f":66.77,"g":336.344,"o":112.25,"c":515.364,"p":29.4,"fx":1.32056},{"ds":"2019-03","y":2019,"m":3,"ph":"actual","v":482335.0,"f":72.73,"g":392.723,"o":150.253,"c":615.706,"p":8.1,"fx":1.33682},{"ds":"2019-04","y":2019,"m":4,"ph":"actual","v":437215.0,"f":69.17,"g":373.02,"o":193.286,"c":635.476,"p":22.1,"fx":1.33777},{"ds":"2019-05","y":2019,"m":5,"ph":"actual","v":537362.0,"f":77.03,"g":402.532,"o":224.727,"c":704.289,"p":41.0,"fx":1.3459},{"ds":"2019-06","y":2019,"m":6,"ph":"actual","v":691306.0,"f":103.75,"g":411.26,"o":177.157,"c":692.167,"p":63.0,"fx":1.32873},{"ds":"2019-07","y":2019,"m":7,"ph":"actual","v":837829.0,"f":97.96,"g":476.815,"o":183.093,"c":757.868,"p":94.9,"fx":1.3101},{"ds":"2019-08","y":2019,"m":8,"ph":"actual","v":847104.0,"f":109.33,"g":473.99,"o":202.407,"c":785.727,"p":88.2,"fx":1.32775},{"ds":"2019-09","y":2019,"m":9,"ph":"actual","v":632852.0,"f":71.04,"g":409.8,"o":139.55,"c":620.39,"p":25.9,"fx":1.32405},{"ds":"2019-10","y":2019,"m":10,"ph":"actual","v":468117.0,"f":68.76,"g":368.69,"o":197.561,"c":635.011,"p":23.7,"fx":1.31898},{"ds":"2019-11","y":2019,"m":11,"ph":"actual","v":389477.0,"f":52.68,"g":306.16,"o":117.529,"c":476.369,"p":21.9,"fx":1.32388},{"ds":"2019-12","y":2019,"m":12,"ph":"actual","v":414760.0,"f":86.36,"g":302.49,"o":113.161,"c":502.011,"p":52.1,"fx":1.31717},{"ds":"2020-01","y":2020,"m":1,"ph":"actual","v":400255.0,"f":80.24,"g":336.665,"o":127.148,"c":544.053,"p":13.6,"fx":1.30867},{"ds":"2020-02","y":2020,"m":2,"ph":"actual","v":405708.0,"f":76.51,"g":306.521,"o":111.241,"c":494.272,"p":27.2,"fx":1.32858},{"ds":"2020-03","y":2020,"m":3,"ph":"actual","v":274648.0,"f":46.59,"g":277.47,"o":103.885,"c":427.945,"p":35.2,"fx":1.39525},{"ds":"2020-04","y":2020,"m":4,"ph":"actual","v":117630.0,"f":25.1,"g":187.94,"o":85.983,"c":299.023,"p":15.6,"fx":1.40579},{"ds":"2020-05","y":2020,"m":5,"ph":"actual","v":181403.0,"f":17.9,"g":199.871,"o":127.979,"c":345.75,"p":65.6,"fx":1.39697},{"ds":"2020-06","y":2020,"m":6,"ph":"actual","v":356292.0,"f":31.77,"g":262.185,"o":128.866,"c":422.821,"p":53.2,"fx":1.35503},{"ds":"2020-07","y":2020,"m":7,"ph":"actual","v":578563.0,"f":40.12,"g":330.12,"o":129.2,"c":499.44,"p":16.9,"fx":1.34985},{"ds":"2020-08","y":2020,"m":8,"ph":"actual","v":641860.0,"f":55.96,"g":343.91,"o":110.259,"c":510.129,"p":17.1,"fx":1.32221},{"ds":"2020-09","y":2020,"m":9,"ph":"actual","v":477729.0,"f":48.96,"g":305.7,"o":132.999,"c":487.659,"p":22.8,"fx":1.32281},{"ds":"2020-10","y":2020,"m":10,"ph":"actual","v":362294.0,"f":50.47,"g":278.98,"o":134.05,"c":463.5,"p":46.2,"fx":1.32147},{"ds":"2020-11","y":2020,"m":11,"ph":"actual","v":318157.0,"f":41.88,"g":235.26,"o":105.344,"c":382.484,"p":28.1,"fx":1.30682},{"ds":"2020-12","y":2020,"m":12,"ph":"actual","v":301585.0,"f":27.8,"g":198.92,"o":107.977,"c":334.697,"p":32.8,"fx":1.28077},{"ds":"2021-01","y":2021,"m":1,"ph":"actual","v":309755.0,"f":21.64,"g":206.14,"o":112.957,"c":340.737,"p":15.6,"fx":1.27241},{"ds":"2021-02","y":2021,"m":2,"ph":"actual","v":303361.0,"f":37.57,"g":196.44,"o":83.008,"c":317.018,"p":27.8,"fx":1.26986},{"ds":"2021-03","y":2021,"m":3,"ph":"actual","v":396451.0,"f":56.77,"g":253.692,"o":105.936,"c":416.398,"p":17.0,"fx":1.25737},{"ds":"2021-04","y":2021,"m":4,"ph":"actual","v":340069.0,"f":40.7,"g":230.12,"o":111.395,"c":382.215,"p":32.8,"fx":1.24959},{"ds":"2021-05","y":2021,"m":5,"ph":"actual","v":326738.0,"f":30.37,"g":231.51,"o":144.959,"c":406.839,"p":28.0,"fx":1.21264},{"ds":"2021-06","y":2021,"m":6,"ph":"actual","v":445923.0,"f":47.42,"g":257.236,"o":120.146,"c":424.802,"p":33.9,"fx":1.22186},{"ds":"2021-07","y":2021,"m":7,"ph":"actual","v":685581.0,"f":76.5,"g":334.34,"o":119.525,"c":530.365,"p":43.7,"fx":1.25288},{"ds":"2021-08","y":2021,"m":8,"ph":"actual","v":720815.0,"f":83.19,"g":364.08,"o":125.575,"c":572.845,"p":53.3,"fx":1.26032},{"ds":"2021-09","y":2021,"m":9,"ph":"actual","v":573033.0,"f":72.74,"g":303.83,"o":128.24,"c":504.81,"p":30.2,"fx":1.26713},{"ds":"2021-10","y":2021,"m":10,"ph":"actual","v":437098.0,"f":62.27,"g":266.2,"o":145.848,"c":474.318,"p":14.4,"fx":1.24368},{"ds":"2021-11","y":2021,"m":11,"ph":"actual","v":365263.0,"f":50.04,"g":248.934,"o":100.573,"c":399.547,"p":65.3,"fx":1.25698},{"ds":"2021-12","y":2021,"m":12,"ph":"actual","v":377138.0,"f":68.63,"g":240.11,"o":150.491,"c":459.231,"p":51.6,"fx":1.27941},{"ds":"2022-01","y":2022,"m":1,"ph":"actual","v":371361.0,"f":64.9,"g":231.42,"o":96.438,"c":392.758,"p":25.1,"fx":1.26155},{"ds":"2022-02","y":2022,"m":2,"ph":"actual","v":389306.0,"f":61.21,"g":243.86,"o":87.133,"c":392.203,"p":6.6,"fx":1.27158},{"ds":"2022-03","y":2022,"m":3,"ph":"actual","v":441639.0,"f":68.735,"g":252.96,"o":114.193,"c":435.888,"p":22.3,"fx":1.26579},{"ds":"2022-04","y":2022,"m":4,"ph":"actual","v":426176.0,"f":90.12,"g":275.12,"o":129.662,"c":494.902,"p":9.5,"fx":1.2628},{"ds":"2022-05","y":2022,"m":5,"ph":"actual","v":518268.0,"f":107.35,"g":322.067,"o":189.855,"c":619.272,"p":9.2,"fx":1.28523},{"ds":"2022-06","y":2022,"m":6,"ph":"actual","v":616453.0,"f":99.25,"g":335.954,"o":194.366,"c":629.57,"p":67.3,"fx":1.28136},{"ds":"2022-07","y":2022,"m":7,"ph":"actual","v":800790.0,"f":130.61,"g":370.58,"o":157.734,"c":658.924,"p":24.2,"fx":1.29423},{"ds":"2022-08","y":2022,"m":8,"ph":"actual","v":779740.0,"f":127.79,"g":365.68,"o":149.125,"c":642.595,"p":31.8,"fx":1.29217},{"ds":"2022-09","y":2022,"m":9,"ph":"actual","v":631125.0,"f":123.79,"g":327.379,"o":141.149,"c":592.318,"p":23.5,"fx":1.33186},{"ds":"2022-10","y":2022,"m":10,"ph":"actual","v":478835.0,"f":118.09,"g":317.382,"o":173.521,"c":608.993,"p":24.1,"fx":1.36995},{"ds":"2022-11","y":2022,"m":11,"ph":"actual","v":343915.0,"f":88.96,"g":235.47,"o":114.126,"c":438.556,"p":31.6,"fx":1.34486},{"ds":"2022-12","y":2022,"m":12,"ph":"actual","v":386938.0,"f":102.21,"g":293.75,"o":148.565,"c":544.525,"p":20.5,"fx":1.35919},{"ds":"2023-01","y":2023,"m":1,"ph":"actual","v":395404.0,"f":113.31,"g":274.12,"o":119.089,"c":506.519,"p":6.7,"fx":1.34217},{"ds":"2023-02","y":2023,"m":2,"ph":"actual","v":380081.0,"f":104.5,"g":240.23,"o":100.371,"c":445.101,"p":16.2,"fx":1.34503},{"ds":"2023-03","y":2023,"m":3,"ph":"actual","v":436769.0,"f":108.9,"g":255.885,"o":114.84,"c":479.625,"p":15.0,"fx":1.36821},{"ds":"2023-04","y":2023,"m":4,"ph":"actual","v":431621.0,"f":131.1,"g":273.42,"o":132.02,"c":536.54,"p":42.5,"fx":1.34851},{"ds":"2023-05","y":2023,"m":5,"ph":"actual","v":542217.0,"f":140.805,"g":319.981,"o":166.683,"c":627.469,"p":31.3,"fx":1.35201},{"ds":"2023-06","y":2023,"m":6,"ph":"actual","v":672771.0,"f":146.91,"g":322.65,"o":145.223,"c":614.783,"p":58.4,"fx":1.32878},{"ds":"2023-07","y":2023,"m":7,"ph":"actual","v":844824.0,"f":202.12,"g":359.14,"o":148.727,"c":709.987,"p":55.1,"fx":1.32146},{"ds":"2023-08","y":2023,"m":8,"ph":"actual","v":820658.0,"f":193.44,"g":348.4,"o":134.74,"c":676.58,"p":35.8,"fx":1.34854},{"ds":"2023-09","y":2023,"m":9,"ph":"actual","v":673839.0,"f":170.14,"g":338.072,"o":139.574,"c":647.786,"p":50.1,"fx":1.35349},{"ds":"2023-10","y":2023,"m":10,"ph":"actual","v":494132.0,"f":150.06,"g":298.97,"o":140.104,"c":589.134,"p":14.8,"fx":1.37167},{"ds":"2023-11","y":2023,"m":11,"ph":"actual","v":394363.0,"f":119.26,"g":258.93,"o":104.708,"c":482.898,"p":18.3,"fx":1.37094},{"ds":"2023-12","y":2023,"m":12,"ph":"actual","v":436143.0,"f":127.01,"g":276.73,"o":123.352,"c":527.092,"p":37.2,"fx":1.34309},{"ds":"2024-01","y":2024,"m":1,"ph":"actual","v":383876.0,"f":123.23,"g":260.18,"o":105.952,"c":489.362,"p":11.4,"fx":1.34245},{"ds":"2024-02","y":2024,"m":2,"ph":"actual","v":399660.0,"f":129.56,"g":255.76,"o":94.189,"c":479.509,"p":39.9,"fx":1.35008},{"ds":"2024-03","y":2024,"m":3,"ph":"actual","v":440694.0,"f":146.99,"g":274.268,"o":109.59,"c":530.848,"p":20.2,"fx":1.35394},{"ds":"2024-04","y":2024,"m":4,"ph":"actual","v":401228.0,"f":142.2,"g":275.239,"o":118.951,"c":536.39,"p":49.1,"fx":1.36738},{"ds":"2024-05","y":2024,"m":5,"ph":"actual","v":551801.0,"f":155.872,"g":304.26,"o":199.917,"c":660.049,"p":44.6,"fx":1.36704},{"ds":"2024-06","y":2024,"m":6,"ph":"actual","v":719910.0,"f":201.035,"g":334.75,"o":169.997,"c":705.782,"p":56.9,"fx":1.37068},{"ds":"2024-07","y":2024,"m":7,"ph":"actual","v":853270.0,"f":200.21,"g":364.75,"o":169.568,"c":734.528,"p":11.1,"fx":1.37118},{"ds":"2024-08","y":2024,"m":8,"ph":"actual","v":840769.0,"f":234.43,"g":360.71,"o":162.484,"c":757.624,"p":91.2,"fx":1.36516},{"ds":"2024-09","y":2024,"m":9,"ph":"actual","v":694094.0,"f":193.01,"g":316.46,"o":138.29,"c":647.76,"p":24.4,"fx":1.35462},{"ds":"2024-10","y":2024,"m":10,"ph":"actual","v":522215.0,"f":173.448,"g":323.72,"o":191.264,"c":688.432,"p":47.8,"fx":1.37549},{"ds":"2024-11","y":2024,"m":11,"ph":"actual","v":411214.0,"f":123.38,"g":262.87,"o":120.575,"c":506.825,"p":19.1,"fx":1.39749},{"ds":"2024-12","y":2024,"m":12,"ph":"actual","v":470030.0,"f":149.97,"g":279.93,"o":114.858,"c":544.758,"p":7.4,"fx":1.42405},{"ds":"2025-01","y":2025,"m":1,"ph":"obs_t","v":427792.0,"f":143.323,"g":255.573,"o":115.252,"c":514.148,"p":2.3,"fx":1.43897,"f80l":131.74,"f80h":175.85,"f95l":122.05,"f95h":189.82,"g80l":235.43,"g80h":291.44,"g95l":222.5,"g95h":308.37,"o80l":95.39,"o80h":132.78,"o95l":87.39,"o95h":144.93,"c80l":484.79,"c80h":581.5,"c95l":462.0,"c95h":610.18},{"ds":"2025-02","y":2025,"m":2,"ph":"obs_t","v":396643.0,"f":131.035,"g":246.358,"o":93.247,"c":470.64,"p":5.7,"fx":1.43011,"f80l":120.3,"f80h":161.27,"f95l":111.32,"f95h":174.28,"g80l":226.66,"g80h":281.48,"g95l":214.03,"g95h":298.09,"o80l":76.96,"o80h":107.66,"o95l":70.42,"o95h":117.66,"c80l":443.38,"c80h":533.27,"c95l":422.23,"c95h":559.97},{"ds":"2025-03","y":2025,"m":3,"ph":"obs_t","v":469610.0,"f":199.58,"g":265.924,"o":112.638,"c":578.142,"p":53.2,"fx":1.43589,"f80l":183.0,"f80h":246.36,"f95l":169.15,"f95h":266.54,"g80l":244.37,"g80h":304.42,"g95l":230.56,"g95h":322.65,"o80l":92.71,"o80h":130.31,"o95l":84.72,"o95h":142.6,"c80l":544.18,"c80h":656.26,"c95l":517.87,"c95h":689.61},{"ds":"2025-04","y":2025,"m":4,"ph":"obs_t","v":473729.0,"f":169.803,"g":273.652,"o":127.389,"c":570.844,"p":24.4,"fx":1.39883,"f80l":155.51,"f80h":210.23,"f95l":143.58,"f95h":227.69,"g80l":251.17,"g80h":313.86,"g95l":236.79,"g95h":332.93,"o80l":104.56,"o80h":147.68,"o95l":95.43,"o95h":161.81,"c80l":536.86,"c80h":649.13,"c95l":510.54,"c95h":682.59},{"ds":"2025-05","y":2025,"m":5,"ph":"obs_t","v":613075.0,"f":187.014,"g":303.568,"o":178.287,"c":668.869,"p":34.1,"fx":1.38601,"f80l":171.06,"f80h":232.22,"f95l":157.77,"f95h":251.78,"g80l":278.3,"g80h":348.83,"g95l":262.15,"g95h":370.32,"o80l":145.94,"o80h":207.11,"o95l":133.03,"o95h":227.21,"c80l":628.52,"c80h":761.94,"c95l":597.3,"c95h":801.76},{"ds":"2025-06","y":2025,"m":6,"ph":"obs_t","v":733232.0,"f":197.572,"g":332.984,"o":160.17,"c":690.726,"p":67.1,"fx":1.36737,"f80l":180.51,"f80h":246.03,"f95l":166.3,"f95h":267.05,"g80l":304.92,"g80h":383.34,"g95l":287.0,"g95h":407.27,"o80l":130.76,"o80h":186.43,"o95l":119.05,"o95h":204.78,"c80l":648.52,"c80h":788.2,"c95l":615.89,"c95h":829.96},{"ds":"2025-07","y":2025,"m":7,"ph":"obs_t","v":867581.0,"f":228.174,"g":363.347,"o":154.074,"c":745.595,"p":98.7,"fx":1.3691,"f80l":208.14,"f80h":284.83,"f95l":191.55,"f95h":309.49,"g80l":332.29,"g80h":418.98,"g95l":312.51,"g95h":445.5,"o80l":125.48,"o80h":179.72,"o95l":114.09,"o95h":197.65,"c80l":699.31,"c80h":852.08,"c95l":663.67,"c95h":897.82},{"ds":"2025-08","y":2025,"m":8,"ph":"obs_t","v":899766.0,"f":225.588,"g":361.562,"o":147.353,"c":734.503,"p":25.0,"fx":1.3802,"f80l":205.37,"f80h":282.16,"f95l":188.81,"f95h":306.91,"g80l":330.17,"g80h":417.53,"g95l":310.28,"g95h":444.3,"o80l":119.73,"o80h":172.27,"o95l":108.74,"o95h":189.68,"c80l":688.04,"c80h":840.45,"c95l":652.55,"c95h":886.16},{"ds":"2025-09","y":2025,"m":9,"ph":"obs_t","v":706054.0,"f":180.712,"g":314.124,"o":142.325,"c":637.161,"p":2.8,"fx":1.38332,"f80l":164.19,"f80h":226.47,"f95l":150.8,"f95h":246.59,"g80l":286.44,"g80h":363.28,"g95l":268.97,"g95h":386.86,"o80l":115.39,"o80h":166.76,"o95l":104.67,"o95h":183.84,"c80l":596.12,"c80h":729.97,"c95l":565.01,"c95h":770.17},{"ds":"2025-10","y":2025,"m":10,"ph":"obs_t","v":535855.0,"f":173.35,"g":317.531,"o":163.87,"c":654.751,"p":23.8,"fx":1.3992,"f80l":157.2,"f80h":217.67,"f95l":144.23,"f95h":237.25,"g80l":289.13,"g80h":367.74,"g95l":271.3,"g95h":391.91,"o80l":132.56,"o80h":192.44,"o95l":120.11,"o95h":212.39,"c80l":611.84,"c80h":751.03,"c95l":579.53,"c95h":792.91},{"ds":"2025-11","y":2025,"m":11,"ph":"obs_t","v":420506.0,"f":147.96,"g":261.365,"o":113.354,"c":522.679,"p":41.4,"fx":1.40553,"f80l":133.92,"f80h":186.14,"f95l":122.74,"f95h":203.09,"g80l":237.65,"g80h":303.12,"g95l":222.83,"g95h":323.29,"o80l":91.5,"o80h":133.4,"o95l":82.8,"o95h":147.41,"c80l":487.83,"c80h":600.26,"c95l":461.78,"c95h":634.13},{"ds":"2025-12","y":2025,"m":12,"ph":"obs_t","v":420944.0,"f":157.45,"g":271.278,"o":122.185,"c":550.913,"p":69.4,"fx":1.38025,"f80l":142.24,"f80h":198.46,"f95l":130.24,"f95h":216.74,"g80l":246.32,"g80h":315.06,"g95l":230.79,"g95h":336.27,"o80l":98.41,"o80h":144.11,"o95l":88.96,"o95h":159.42,"c80l":513.57,"c80h":633.44,"c95l":485.84,"c95h":669.6},{"ds":"2026-01","y":2026,"m":1,"ph":"obs_t","v":435532.0,"f":158.481,"g":253.017,"o":113.696,"c":525.194,"p":8.2,"fx":1.37782,"f80l":142.9,"f80h":200.13,"f95l":130.72,"f95h":218.79,"g80l":229.42,"g80h":294.26,"g95l":214.8,"g95h":314.29,"o80l":91.38,"o80h":134.38,"o95l":82.51,"o95h":148.83,"c80l":489.02,"c80h":604.58,"c95l":462.32,"c95h":639.49},{"ds":"2026-02","y":2026,"m":2,"ph":"obs_t","v":413947.0,"f":141.728,"g":244.748,"o":92.267,"c":478.743,"p":22.2,"fx":1.36507,"f80l":127.56,"f80h":179.3,"f95l":116.57,"f95h":196.21,"g80l":221.62,"g80h":285.03,"g95l":207.34,"g95h":304.66,"o80l":74.0,"o80h":109.29,"o95l":66.74,"o95h":121.17,"c80l":445.25,"c80h":551.75,"c95l":420.68,"c95h":583.97},{"ds":"2026-03","y":2026,"m":3,"ph":"obs_t","v":457081.0,"f":186.965,"g":269.273,"o":114.678,"c":570.916,"p":77.2,"fx":1.37171,"f80l":167.97,"f80h":236.97,"f95l":153.35,"f95h":259.56,"g80l":243.5,"g80h":314.01,"g95l":227.65,"g95h":335.88,"o80l":91.78,"o80h":136.12,"o95l":82.69,"o95h":151.08,"c80l":530.37,"c80h":658.73,"c95l":500.79,"c95h":697.63},{"ds":"2026-04","y":2026,"m":4,"ph":"obs_t","v":449804.0,"f":171.902,"g":271.149,"o":125.864,"c":568.915,"p":35.9,"fx":1.37506,"f80l":154.16,"f80h":218.27,"f95l":140.6,"f95h":239.31,"g80l":244.87,"g80h":316.62,"g95l":228.77,"g95h":338.91,"o80l":100.52,"o80h":149.7,"o95l":90.47,"o95h":166.35,"c80l":527.91,"c80h":657.17,"c95l":498.17,"c95h":696.4},{"ds":"2026-05","y":2026,"m":5,"ph":"obs_t","v":574102.0,"f":186.431,"g":299.841,"o":176.016,"c":662.288,"p":64.5,"fx":1.37231,"f80l":166.89,"f80h":237.14,"f95l":152.07,"f95h":260.25,"g80l":270.42,"g80h":350.59,"g95l":252.46,"g95h":375.53,"o80l":140.29,"o80h":209.78,"o95l":126.12,"o95h":233.36,"c80l":613.86,"c80h":765.89,"c95l":578.94,"c95h":812.09},{"ds":"2026-06","y":2026,"m":6,"ph":"obs_t","v":716668.0,"f":218.818,"g":325.772,"o":155.778,"c":700.368,"p":73.5,"fx":1.40402,"f80l":195.54,"f80h":278.83,"f95l":178.01,"f95h":306.29,"g80l":293.43,"g80h":381.41,"g95l":273.75,"g95h":408.83,"o80l":123.91,"o80h":186.04,"o95l":111.27,"o95h":207.17,"c80l":648.43,"c80h":810.83,"c95l":611.18,"c95h":860.25},{"ds":"2026-07","y":2026,"m":7,"ph":"obs_t","v":899191.0,"f":231.396,"g":358.286,"o":150.992,"c":740.674,"p":5.9,"fx":1.41071,"f80l":206.41,"f80h":295.38,"f95l":187.73,"f95h":324.77,"g80l":322.29,"g80h":420.02,"g95l":300.47,"g95h":450.52,"o80l":119.86,"o80h":180.69,"o95l":107.52,"o95h":201.42,"c80l":684.99,"c80h":858.45,"c95l":645.26,"c95h":911.3},{"ds":"2026-08","y":2026,"m":8,"ph":"obs_t","v":874286.0,"f":239.312,"g":357.169,"o":144.677,"c":741.158,"p":38.5,"fx":1.38981,"f80l":213.1,"f80h":306.01,"f95l":193.64,"f95h":336.77,"g80l":320.88,"g80h":419.25,"g95l":298.95,"g95h":450.0,"o80l":114.62,"o80h":173.48,"o95l":102.71,"o95h":193.59,"c80l":684.69,"c80h":859.95,"c95l":644.6,"c95h":913.42},{"ds":"2026-09","y":2026,"m":9,"ph":"obs_t","v":736346.0,"f":221.345,"g":312.911,"o":141.586,"c":675.842,"p":51.0,"fx":1.3962,"f80l":196.76,"f80h":283.52,"f95l":178.63,"f95h":312.31,"g80l":280.76,"g80h":367.77,"g95l":261.4,"g95h":395.01,"o80l":111.95,"o80h":170.1,"o95l":100.22,"o95h":190.02,"c80l":623.67,"c80h":785.01,"c95l":586.82,"c95h":834.3},{"ds":"2026-10","y":2026,"m":10,"ph":"obs_t","v":530809.0,"f":182.051,"g":310.845,"o":159.799,"c":652.695,"p":13.0,"fx":1.41351,"f80l":161.56,"f80h":233.59,"f95l":146.54,"f95h":257.54,"g80l":278.55,"g80h":365.8,"g95l":259.17,"g95h":393.16,"o80l":126.1,"o80h":192.36,"o95l":112.77,"o95h":215.11,"c80l":601.66,"c80h":758.94,"c95l":565.79,"c95h":807.05},{"ds":"2026-11","y":2026,"m":11,"ph":"fwd","v":431254.4,"f":157.198,"g":260.812,"o":113.017,"c":531.027,"p":27.87,"fx":1.40742,"v80l":396851.2,"v80h":462665.1,"v95l":381056.6,"v95h":481842.4,"f80l":139.27,"f80h":202.04,"f95l":126.21,"f95h":222.95,"g80l":233.43,"g80h":307.3,"g95l":217.04,"g95h":330.5,"o80l":89.01,"o80h":136.31,"o95l":79.52,"o95h":152.58,"c80l":488.99,"c80h":618.13,"c95l":459.58,"c95h":657.68},{"ds":"2026-12","y":2026,"m":12,"ph":"fwd","v":450169.9,"f":165.011,"g":271.195,"o":122.135,"c":558.341,"p":36.05,"fx":1.40571,"v80l":413745.3,"v80h":483464.1,"v95l":397038.1,"v95h":503808.1,"f80l":145.95,"f80h":212.44,"f95l":132.14,"f95h":234.63,"g80l":242.42,"g80h":319.93,"g95l":225.26,"g95h":344.31,"o80l":96.01,"o80h":147.59,"o95l":85.68,"o95h":165.38,"c80l":513.6,"c80h":650.6,"c95l":482.44,"c95h":692.63},{"ds":"2027-01","y":2027,"m":1,"ph":"fwd","v":471391.7,"f":176.838,"g":252.163,"o":113.175,"c":542.176,"p":14.26,"fx":1.40571,"v80l":432721.8,"v80h":506778.1,"v95l":415000.9,"v95h":528417.9,"f80l":156.15,"f80h":228.04,"f95l":141.25,"f95h":252.09,"g80l":225.13,"g80h":297.85,"g95l":209.05,"g95h":320.75,"o80l":88.8,"o80h":137.02,"o95l":79.17,"o95h":153.69,"c80l":498.21,"c80h":632.43,"c95l":467.72,"c95h":673.65},{"ds":"2027-02","y":2027,"m":2,"ph":"fwd","v":433558.6,"f":165.832,"g":241.229,"o":90.124,"c":497.185,"p":22.55,"fx":1.40571,"v80l":397513.9,"v80h":466579.3,"v95l":381010.9,"v95h":486788.5,"f80l":146.19,"f80h":214.2,"f95l":132.13,"f95h":237.0,"g80l":215.11,"g80h":285.28,"g95l":199.62,"g95h":307.41,"o80l":70.58,"o80h":109.32,"o95l":62.86,"o95h":122.74,"c80l":456.39,"c80h":580.55,"c95l":428.23,"c95h":618.73},{"ds":"2027-03","y":2027,"m":3,"ph":"fwd","v":485077.2,"f":201.579,"g":267.301,"o":113.476,"c":582.356,"p":26.15,"fx":1.40571,"v80l":444222.0,"v80h":522545.6,"v95l":425533.2,"v95h":545495.0,"f80l":177.41,"f80h":260.8,"f95l":160.21,"f95h":288.8,"g80l":238.07,"g80h":316.49,"g95l":220.79,"g95h":341.27,"o80l":88.7,"o80h":137.9,"o95l":78.92,"o95h":154.99,"c80l":534.03,"c80h":680.7,"c95l":500.8,"c95h":725.86},{"ds":"2027-04","y":2027,"m":4,"ph":"fwd","v":465447.2,"f":187.693,"g":268.974,"o":124.539,"c":581.206,"p":30.14,"fx":1.40571,"v80l":425746.7,"v80h":501895.9,"v95l":407602.0,"v95h":524238.1,"f80l":164.92,"f80h":243.23,"f95l":148.81,"f95h":269.57,"g80l":239.27,"g80h":318.85,"g95l":221.76,"g95h":344.03,"o80l":97.17,"o80h":151.63,"o95l":86.37,"o95h":170.58,"c80l":532.43,"c80h":680.05,"c95l":499.04,"c95h":725.55},{"ds":"2027-05","y":2027,"m":5,"ph":"fwd","v":566953.7,"f":200.407,"g":295.822,"o":173.569,"c":669.798,"p":39.67,"fx":1.40571,"v80l":518019.3,"v80h":611976.0,"v95l":495662.2,"v95h":639579.4,"f80l":175.81,"f80h":260.12,"f95l":158.5,"f95h":288.54,"g80l":262.84,"g80h":351.1,"g95l":243.46,"g95h":379.06,"o80l":135.18,"o80h":211.71,"o95l":120.04,"o95h":238.4,"c80l":612.97,"c80h":784.5,"c95l":574.22,"c95h":837.44},{"ds":"2027-06","y":2027,"m":6,"ph":"fwd","v":701841.5,"f":224.506,"g":321.993,"o":153.477,"c":699.976,"p":56.21,"fx":1.40571,"v80l":640590.1,"v80h":758373.4,"v95l":612601.5,"v95h":793022.0,"f80l":196.64,"f80h":291.87,"f95l":177.13,"f95h":324.02,"g80l":285.76,"g80h":382.61,"g95l":264.52,"g95h":413.33,"o80l":119.31,"o80h":187.54,"o95l":105.85,"o95h":211.39,"c80l":639.94,"c80h":820.67,"c95l":599.17,"c95h":876.51},{"ds":"2027-07","y":2027,"m":7,"ph":"fwd","v":890111.6,"f":248.392,"g":356.916,"o":150.157,"c":755.465,"p":44.19,"fx":1.40571,"v80l":811585.0,"v80h":962808.9,"v95l":775698.3,"v95h":1007352.0,"f80l":217.22,"f80h":323.43,"f95l":195.5,"f95h":359.36,"g80l":316.39,"g80h":424.6,"g95l":292.69,"g95h":458.98,"o80l":116.52,"o80h":183.82,"o95l":103.27,"o95h":207.39,"c80l":689.99,"c80h":886.6,"c95l":645.68,"c95h":947.44},{"ds":"2027-08","y":2027,"m":8,"ph":"fwd","v":900212.3,"f":259.324,"g":353.077,"o":142.185,"c":754.586,"p":40.86,"fx":1.40571,"v80l":819951.9,"v80h":974735.3,"v95l":783269.2,"v95h":1020384.9,"f80l":226.43,"f80h":338.19,"f95l":203.61,"f95h":376.08,"g80l":312.62,"g80h":420.52,"g95l":289.03,"g95h":454.85,"o80l":110.14,"o80h":174.37,"o95l":97.52,"o95h":196.92,"c80l":688.51,"c80h":886.44,"c95l":643.96,"c95h":947.76},{"ds":"2027-09","y":2027,"m":9,"ph":"fwd","v":688176.3,"f":213.964,"g":309.343,"o":139.414,"c":662.721,"p":30.25,"fx":1.40571,"v80l":626184.4,"v80h":745903.1,"v95l":597849.0,"v95h":781255.6,"f80l":186.53,"f80h":279.47,"f95l":167.6,"f95h":311.04,"g80l":273.58,"g80h":368.85,"g95l":252.78,"g95h":399.21,"o80l":107.8,"o80h":171.28,"o95l":95.36,"o95h":193.61,"c80l":604.09,"c80h":779.29,"c95l":564.72,"c95h":833.62},{"ds":"2027-10","y":2027,"m":10,"ph":"fwd","v":537108.9,"f":186.436,"g":309.922,"o":159.237,"c":655.595,"p":33.95,"fx":1.40571,"v80l":488235.1,"v80h":582748.1,"v95l":465894.5,"v95h":610692.2,"f80l":162.28,"f80h":243.89,"f95l":145.69,"f95h":271.66,"g80l":273.78,"g80h":369.96,"g95l":252.81,"g95h":400.65,"o80l":122.91,"o80h":195.98,"o95l":108.63,"o95h":221.74,"c80l":597.02,"c80h":771.66,"c95l":557.82,"c95h":825.89},{"ds":"2027-11","y":2027,"m":11,"ph":"fwd","v":427360.0,"f":155.85,"g":260.396,"o":112.763,"c":529.009,"p":27.87,"fx":1.40571,"v80l":388087.4,"v80h":464133.9,"v95l":370134.8,"v95h":486645.7,"f80l":135.45,"f80h":204.19,"f95l":121.51,"f95h":227.62,"g80l":229.77,"g80h":311.19,"g95l":212.05,"g95h":337.21,"o80l":86.88,"o80h":139.02,"o95l":76.72,"o95h":157.44,"c80l":481.28,"c80h":623.26,"c95l":449.45,"c95h":667.4},{"ds":"2027-12","y":2027,"m":12,"ph":"fwd","v":443167.7,"f":161.343,"g":270.483,"o":121.701,"c":553.527,"p":36.05,"fx":1.40571,"v80l":402047.7,"v80h":481774.6,"v95l":383250.2,"v95h":505404.5,"f80l":140.01,"f80h":211.71,"f95l":125.5,"f95h":236.19,"g80l":238.41,"g80h":323.61,"g95l":219.88,"g95h":350.87,"o80l":93.61,"o80h":150.3,"o95l":82.58,"o95h":170.37,"c80l":503.1,"c80h":652.77,"c95l":469.59,"c95h":699.35}];
+    const PRESETS = [{"id":"base","label":"Baseline","desc":"Baseline trajectory anchored on observed Town traffic (with Hwy 1/Park bridge fallback) & macro/weather actuals, plus normal 2027 seasonality and current diversion saturation.","traffic":0.0,"summer":0.0,"temp":0.0,"precip":0.0,"hosp":0.0,"fx":1.4057,"unemp":0.0,"shift":0.0,"red":0.0,"summerOnly":false},{"id":"boom","label":"High Tourism Boom (+12%)","desc":"Renewed Canada Strong Pass + weak CAD (1.46) + strong AB labour (-0.5 pp unemp) and +5% real hospitality receipts driving ~+12% annual traffic (+15% peak Jun-Sep).","traffic":5.0,"summer":3.0,"temp":0.0,"precip":0.0,"hosp":5.0,"fx":1.46,"unemp":-0.5,"shift":0.0,"red":0.0,"summerOnly":false},{"id":"smoke","label":"Wildfire & Smoke Shock (-18% Summer)","desc":"Severe Jun-Sep wildfire smoke / highway disruption: -18% summer Total Vehicles, +2.5 C summer heat anomaly, -40% summer precipitation, -10% hospitality activity.","traffic":-4.0,"summer":-14.0,"temp":2.5,"precip":-40.0,"hosp":-10.0,"fx":1.4057,"unemp":0.0,"shift":0.0,"red":0.0,"summerOnly":true},{"id":"warm","label":"Warm Climate Shift (+2.0 C)","desc":"Unusually mild winter & warm summer (+2.0 C above 10-yr climate normal, -15% precip), driving +4% shoulder/outdoor vehicle visitation plus direct temperature elasticity.","traffic":4.0,"summer":0.0,"temp":2.0,"precip":-15.0,"hosp":0.0,"fx":1.4057,"unemp":0.0,"shift":0.0,"red":0.0,"summerOnly":false},{"id":"slow","label":"Macro Slowdown & Strong CAD","desc":"Macroeconomic cooling (+1.5 pp AB unemployment, -6% real hospitality) & stronger CAD (1.35), endogenously cutting Banff visitation and tourism waste without arbitrary traffic override.","traffic":0.0,"summer":0.0,"temp":0.0,"precip":0.0,"hosp":-6.0,"fx":1.35,"unemp":1.5,"shift":0.0,"red":0.0,"summerOnly":false},{"id":"zw","label":"Enhanced Zero-Waste Diversion (-15% Garbage)","desc":"Accelerated Banff Zero Waste bylaw enforcement: 15% of remaining commercial & residential garbage stream captured into organics/diversion with 3% source reduction.","traffic":0.0,"summer":0.0,"temp":0.0,"precip":0.0,"hosp":0.0,"fx":1.4057,"unemp":0.0,"shift":15.0,"red":3.0,"summerOnly":false}];
+    const CV_SUMMARY = [{"target":"Other Diversion","model":"MinT_Coherent","MAE":15.7609665157,"RMSE":19.8951997096,"MAPE":10.9928913525,"sMAPE":11.006151443,"MASE":0.5849851795,"Bias_pct":0.7268104825},{"target":"Other Diversion","model":"LogAutoETS","MAE":16.2631161472,"RMSE":20.6301622137,"MAPE":11.0758933554,"sMAPE":11.236801858,"MASE":0.6021019952,"Bias_pct":-0.3570202123},{"target":"Other Diversion","model":"Ensemble_Top3","MAE":17.4645843915,"RMSE":20.9260208624,"MAPE":12.1654752263,"sMAPE":12.1790256037,"MASE":0.6471010012,"Bias_pct":1.5088104145},{"target":"Other Diversion","model":"Ridge_Exo","MAE":18.7746620707,"RMSE":22.6176265575,"MAPE":13.1627910981,"sMAPE":13.1506470849,"MASE":0.6958586925,"Bias_pct":1.8525142262},{"target":"Other Diversion","model":"Hybrid_Ridge_LGBM","MAE":18.6723551551,"RMSE":22.3552534921,"MAPE":13.3311454517,"sMAPE":13.0697590504,"MASE":0.6918196689,"Bias_pct":3.1160063754},{"target":"Other Diversion","model":"SeasonalNaive","MAE":19.7045555556,"RMSE":25.1880244074,"MAPE":13.3410446253,"sMAPE":13.8787983493,"MASE":0.7271716257,"Bias_pct":-3.3200874024},{"target":"Other Diversion","model":"SARIMAX_Exo","MAE":20.918375835,"RMSE":24.4751046446,"MAPE":14.7533041539,"sMAPE":14.8136648672,"MASE":0.7703145109,"Bias_pct":1.434550901},{"target":"Other Diversion","model":"AutoTheta","MAE":21.2966781457,"RMSE":26.6763921046,"MAPE":15.3858745605,"sMAPE":15.2831834822,"MASE":0.7809900114,"Bias_pct":-0.3306851257},{"target":"Other Diversion","model":"LogAutoARIMA","MAE":26.2166665384,"RMSE":30.0088462312,"MAPE":17.8371881634,"sMAPE":19.6382464269,"MASE":0.9492055251,"Bias_pct":-5.7135320508},{"target":"Total Collection","model":"SARIMAX_Exo","MAE":36.3533553842,"RMSE":45.2079200037,"MAPE":6.2300014013,"sMAPE":6.3548597525,"MASE":0.3820779284,"Bias_pct":-2.5264423659},{"target":"Total Collection","model":"MinT_Coherent","MAE":37.6758950112,"RMSE":45.9223492496,"MAPE":6.3810582797,"sMAPE":6.644983187,"MASE":0.3937597641,"Bias_pct":-3.6697851747},{"target":"Total Collection","model":"Ensemble_Top3","MAE":39.1720500772,"RMSE":50.3618687804,"MAPE":7.4614252719,"sMAPE":7.0656527964,"MASE":0.4073875793,"Bias_pct":4.8280822484},{"target":"Total Collection","model":"LogAutoARIMA","MAE":45.4189938325,"RMSE":54.5392089204,"MAPE":8.1126300436,"sMAPE":8.1401972296,"MASE":0.4717391749,"Bias_pct":-0.5585475919},{"target":"Total Collection","model":"Ridge_Exo","MAE":51.6216286715,"RMSE":64.282134919,"MAPE":9.959176311,"sMAPE":9.2099985467,"MASE":0.5334427464,"Bias_pct":8.4978302714},{"target":"Total Collection","model":"Hybrid_Ridge_LGBM","MAE":54.7709461179,"RMSE":67.6182558637,"MAPE":10.5836651642,"sMAPE":9.7387476634,"MASE":0.5666783546,"Bias_pct":9.7109953533},{"target":"Total Collection","model":"SeasonalNaive","MAE":60.8768333333,"RMSE":72.5013100576,"MAPE":10.680225544,"sMAPE":11.7056416325,"MASE":0.6275496555,"Bias_pct":-9.9790320314},{"target":"Total Collection","model":"LogAutoETS","MAE":73.9747192037,"RMSE":88.2076801252,"MAPE":12.478246355,"sMAPE":13.427705704,"MASE":0.7583971622,"Bias_pct":-7.1067754504},{"target":"Total Collection","model":"AutoTheta","MAE":100.211763755,"RMSE":122.7695692529,"MAPE":16.3073995243,"sMAPE":18.1466848882,"MASE":1.0479539765,"Bias_pct":-10.9771292352},{"target":"Total Food Waste","model":"MinT_Coherent","MAE":13.8979829063,"RMSE":17.7954337067,"MAPE":10.170449209,"sMAPE":10.4479790679,"MASE":0.4502539896,"Bias_pct":-4.8824029304},{"target":"Total Food Waste","model":"Hybrid_Ridge_LGBM","MAE":14.0857707955,"RMSE":18.088167563,"MAPE":10.5713791015,"sMAPE":11.1534126199,"MASE":0.4605972786,"Bias_pct":-6.4735848479},{"target":"Total Food Waste","model":"Ensemble_Top3","MAE":14.977891634,"RMSE":18.8720632339,"MAPE":11.0763372204,"sMAPE":11.6071568543,"MASE":0.4900956291,"Bias_pct":-6.3414424909},{"target":"Total Food Waste","model":"Ridge_Exo","MAE":17.8924576136,"RMSE":22.1201924392,"MAPE":12.687547452,"sMAPE":13.4379040962,"MASE":0.5741247309,"Bias_pct":-8.4286249378},{"target":"Total Food Waste","model":"SARIMAX_Exo","MAE":17.1535408412,"RMSE":19.858326903,"MAPE":13.9365254335,"sMAPE":14.4420937772,"MASE":0.572288666,"Bias_pct":-3.839789635},{"target":"Total Food Waste","model":"AutoTheta","MAE":35.8092439967,"RMSE":45.2545210398,"MAPE":24.2997249271,"sMAPE":29.3715317708,"MASE":1.1633762705,"Bias_pct":-22.6879445928},{"target":"Total Food Waste","model":"LogAutoETS","MAE":36.8573823249,"RMSE":46.425654805,"MAPE":24.7556461209,"sMAPE":29.9550075193,"MASE":1.1920407912,"Bias_pct":-23.429485451},{"target":"Total Food Waste","model":"SeasonalNaive","MAE":36.9254166667,"RMSE":40.0114825491,"MAPE":29.8418855149,"sMAPE":37.4789208412,"MASE":1.2279616802,"Bias_pct":-29.7888856092},{"target":"Total Food Waste","model":"LogAutoARIMA","MAE":45.7319194574,"RMSE":53.7562371033,"MAPE":32.4564294331,"sMAPE":41.7149282292,"MASE":1.4959461934,"Bias_pct":-31.1103336514},{"target":"Total Garbage","model":"MinT_Coherent","MAE":19.9938023793,"RMSE":24.1037152294,"MAPE":6.6861921193,"sMAPE":7.0910591741,"MASE":0.3602448061,"Bias_pct":-4.3937251703},{"target":"Total Garbage","model":"SeasonalNaive","MAE":21.6929722222,"RMSE":26.4356250545,"MAPE":7.2785214785,"sMAPE":7.7593189272,"MASE":0.3896047556,"Bias_pct":-4.4605468128},{"target":"Total Garbage","model":"Ensemble_Top3","MAE":23.8302401848,"RMSE":29.1237546217,"MAPE":7.8520498529,"sMAPE":7.9682187714,"MASE":0.428015359,"Bias_pct":-1.2851772784},{"target":"Total Garbage","model":"SARIMAX_Exo","MAE":24.0741666353,"RMSE":26.6046740269,"MAPE":8.2097112979,"sMAPE":7.8055951066,"MASE":0.4408374535,"Bias_pct":5.5239488125},{"target":"Total Garbage","model":"LogAutoARIMA","MAE":25.2245905599,"RMSE":29.5887334024,"MAPE":8.5192444826,"sMAPE":8.468580224,"MASE":0.4555269439,"Bias_pct":1.9996197651},{"target":"Total Garbage","model":"Hybrid_Ridge_LGBM","MAE":30.9324166913,"RMSE":37.5507172962,"MAPE":9.9617459182,"sMAPE":10.6875531668,"MASE":0.5582959642,"Bias_pct":-7.4668454506},{"target":"Total Garbage","model":"Ridge_Exo","MAE":31.6607433117,"RMSE":38.5872745437,"MAPE":10.1776448312,"sMAPE":10.9845383328,"MASE":0.5697497974,"Bias_pct":-7.8817882394},{"target":"Total Garbage","model":"LogAutoETS","MAE":42.4349929157,"RMSE":52.3218462501,"MAPE":13.2862306635,"sMAPE":14.4854062134,"MASE":0.7808801161,"Bias_pct":-7.8278439389},{"target":"Total Garbage","model":"AutoTheta","MAE":43.1674474742,"RMSE":50.957549381,"MAPE":13.6798008045,"sMAPE":15.4809550826,"MASE":0.7612484774,"Bias_pct":-9.7430327858},{"target":"Total Vehicles","model":"Ensemble_Top3","MAE":26649.5235650945,"RMSE":31870.0007617332,"MAPE":5.6654273416,"sMAPE":5.439823011,"MASE":0.4403647708,"Bias_pct":3.1191648254},{"target":"Total Vehicles","model":"Hybrid_Ridge_LGBM","MAE":34651.9904459234,"RMSE":42077.3971560625,"MAPE":7.5335979258,"sMAPE":7.1092438586,"MASE":0.571565025,"Bias_pct":6.3223822516},{"target":"Total Vehicles","model":"Ridge_Exo","MAE":37324.5517775215,"RMSE":45132.143497522,"MAPE":8.061177711,"sMAPE":7.5758095475,"MASE":0.6151771917,"Bias_pct":7.0857288865},{"target":"Total Vehicles","model":"SeasonalNaive","MAE":43396.2222222222,"RMSE":51545.5632610583,"MAPE":8.2595137174,"sMAPE":8.9623454194,"MASE":0.7156027681,"Bias_pct":-7.1302072911},{"target":"Total Vehicles","model":"LogAutoETS","MAE":47476.5771666447,"RMSE":56867.2633437088,"MAPE":8.6581878917,"sMAPE":9.1734018094,"MASE":0.7790105369,"Bias_pct":-7.0458965538},{"target":"Total Vehicles","model":"AutoTheta","MAE":48911.6972241731,"RMSE":58035.3022511902,"MAPE":8.8240884641,"sMAPE":9.3262023045,"MASE":0.8023060218,"Bias_pct":-6.8202703143},{"target":"Total Vehicles","model":"SARIMAX_Exo","MAE":56568.1154042995,"RMSE":64272.1067500339,"MAPE":10.1232491785,"sMAPE":10.7461015024,"MASE":0.9328016677,"Bias_pct":-8.7800148472},{"target":"Total Vehicles","model":"LogAutoARIMA","MAE":60418.4312244051,"RMSE":72531.9328136632,"MAPE":10.8407123312,"sMAPE":11.697130572,"MASE":0.9959003158,"Bias_pct":-9.405679036}];
+    const AUDIT_ROWS = [{"ds":2018,"Total Food Waste_clean":720.584,"Total Food Waste_legacy":729.904,"Total Food Waste_diff":-9.32,"Total Garbage_clean":4757.866,"Total Garbage_legacy":4444.59,"Total Garbage_diff":313.276,"Total Collection_clean":7252.327,"Total Collection_legacy":6259.659,"Total Collection_diff":992.668},{"ds":2019,"Total Food Waste_clean":949.43,"Total Food Waste_legacy":968.63,"Total Food Waste_diff":-19.2,"Total Garbage_clean":4653.434,"Total Garbage_legacy":4638.309,"Total Garbage_diff":15.125,"Total Collection_clean":7538.277,"Total Collection_legacy":7389.267,"Total Collection_diff":149.01},{"ds":2020,"Total Food Waste_clean":543.3,"Total Food Waste_legacy":556.12,"Total Food Waste_diff":-12.82,"Total Garbage_clean":3263.542,"Total Garbage_legacy":3227.342,"Total Garbage_diff":36.2,"Total Collection_clean":5211.773,"Total Collection_legacy":5458.179,"Total Collection_diff":-246.406},{"ds":2021,"Total Food Waste_clean":647.84,"Total Food Waste_legacy":647.84,"Total Food Waste_diff":0.0,"Total Garbage_clean":3132.632,"Total Garbage_legacy":3122.37,"Total Garbage_diff":10.262,"Total Collection_clean":5229.125,"Total Collection_legacy":5178.631,"Total Collection_diff":50.494},{"ds":2022,"Total Food Waste_clean":1183.015,"Total Food Waste_legacy":1190.455,"Total Food Waste_diff":-7.44,"Total Garbage_clean":3571.622,"Total Garbage_legacy":3557.527,"Total Garbage_diff":14.095,"Total Collection_clean":6450.504,"Total Collection_legacy":6314.258,"Total Collection_diff":136.246},{"ds":2023,"Total Food Waste_clean":1707.555,"Total Food Waste_legacy":1713.775,"Total Food Waste_diff":-6.22,"Total Garbage_clean":3566.528,"Total Garbage_legacy":3529.463,"Total Garbage_diff":37.065,"Total Collection_clean":6843.514,"Total Collection_legacy":6796.767,"Total Collection_diff":46.747},{"ds":2024,"Total Food Waste_clean":1973.335,"Total Food Waste_legacy":1973.335,"Total Food Waste_diff":0.0,"Total Garbage_clean":3612.897,"Total Garbage_legacy":3612.897,"Total Garbage_diff":0.0,"Total Collection_clean":7281.867,"Total Collection_legacy":7281.867,"Total Collection_diff":0.0}];
+    const DIAG_ROWS = [{"Target":"Total Vehicles","n":155,"Traffic Elasticity":"","Temp Coef (/+1C)":0.0077480328,"Precip Elasticity":-0.0071021679,"Macro/FX Elasticity":1.0793751431,"AB Unemp Coef (/+1pp)":-0.019596767,"AR(1) Phi":0.1899439787,"Log R2":0.9528095498,"Durbin-Watson":1.9766389493,"Ljung-Box p(12)":0.3040518448},{"Target":"Total Food Waste","n":84,"Traffic Elasticity":0.5101234445,"Temp Coef (/+1C)":-0.0031024524,"Precip Elasticity":0.0202708818,"Macro/FX Elasticity":0.8109242375,"AB Unemp Coef (/+1pp)":"","AR(1) Phi":0.4259468353,"Log R2":0.9418898808,"Durbin-Watson":1.9210015114,"Ljung-Box p(12)":0.1356854412},{"Target":"Total Garbage","n":84,"Traffic Elasticity":0.4303411838,"Temp Coef (/+1C)":0.0004667972,"Precip Elasticity":-0.0077847473,"Macro/FX Elasticity":0.1641690994,"AB Unemp Coef (/+1pp)":"","AR(1) Phi":0.8601301986,"Log R2":0.9343327318,"Durbin-Watson":2.3919740315,"Ljung-Box p(12)":0.6057082432},{"Target":"Other Diversion","n":84,"Traffic Elasticity":0.5399665887,"Temp Coef (/+1C)":-0.0120876747,"Precip Elasticity":0.0212789879,"Macro/FX Elasticity":-0.0981556073,"AB Unemp Coef (/+1pp)":"","AR(1) Phi":0.2185716651,"Log R2":0.8198258375,"Durbin-Watson":2.0536936253,"Ljung-Box p(12)":0.1062408153},{"Target":"Total Collection","n":84,"Traffic Elasticity":0.421368451,"Temp Coef (/+1C)":-0.0020776269,"Precip Elasticity":0.0053944595,"Macro/FX Elasticity":0.1905508049,"AB Unemp Coef (/+1pp)":"","AR(1) Phi":0.7688805158,"Log R2":0.9447061238,"Durbin-Watson":2.4314985723,"Ljung-Box p(12)":0.4172419507}];
+    const SCEN27 = [{"scenario":"Baseline","Total Vehicles":7010406.834449415,"Total Food Waste":2382.1660035054,"Total Garbage":3507.6188691043,"Total Collection":7483.602014202,"Other Diversion":1593.8171415923,"Total Vehicles (% vs Base)":0.0,"Total Food Waste (% vs Base)":0.0,"Total Garbage (% vs Base)":0.0,"Total Collection (% vs Base)":0.0,"Other Diversion (% vs Base)":0.0},{"scenario":"High Tourism Boom (+12%)","Total Vehicles":7844113.492582974,"Total Food Waste":2622.3208995957,"Total Garbage":3707.711570905,"Total Collection":8021.2776711447,"Other Diversion":1691.245200644,"Total Vehicles (% vs Base)":11.8924147745,"Total Food Waste (% vs Base)":10.0813669466,"Total Garbage (% vs Base)":5.7045166327,"Total Collection (% vs Base)":7.1847174118,"Other Diversion (% vs Base)":6.1128755934},{"scenario":"Wildfire & Smoke Shock (-18% Summer)","Total Vehicles":6498319.014842376,"Total Food Waste":2216.2556844999,"Total Garbage":3394.8375455641,"Total Collection":7130.7213506676,"Other Diversion":1519.6281206037,"Total Vehicles (% vs Base)":-7.30468048,"Total Food Waste (% vs Base)":-6.9646833496,"Total Garbage (% vs Base)":-3.2153243482,"Total Collection (% vs Base)":-4.7153852231,"Other Diversion (% vs Base)":-4.6548012976},{"scenario":"Warm Climate Shift (+2.0 C)","Total Vehicles":7412951.449621929,"Total Food Waste":2428.0868253252,"Total Garbage":3600.6709677664,"Total Collection":7626.7719045464,"Other Diversion":1598.0141114548,"Total Vehicles (% vs Base)":5.7421006324,"Total Food Waste (% vs Base)":1.9276919305,"Total Garbage (% vs Base)":2.6528565997,"Total Collection (% vs Base)":1.9131147016,"Other Diversion (% vs Base)":0.263328192},{"scenario":"Macro Slowdown & Strong CAD","Total Vehicles":6516593.705916795,"Total Food Waste":2182.7214537913,"Total Garbage":3364.7227925547,"Total Collection":7079.622737688,"Other Diversion":1532.1784913421,"Total Vehicles (% vs Base)":-7.0440010144,"Total Food Waste (% vs Base)":-8.3724034942,"Total Garbage (% vs Base)":-4.0738769485,"Total Collection (% vs Base)":-5.3981929524,"Other Diversion (% vs Base)":-3.8673602286},{"scenario":"Enhanced Zero-Waste Diversion (-15% Garbage)","Total Vehicles":7010406.834449415,"Total Food Waste":2693.4699324912,"Total Garbage":2892.0317575765,"Total Collection":7131.5043174122,"Other Diversion":1546.0026273445,"Total Vehicles (% vs Base)":0.0,"Total Food Waste (% vs Base)":13.0681039242,"Total Garbage (% vs Base)":-17.55,"Total Collection (% vs Base)":-4.7049227915,"Other Diversion (% vs Base)":-3.0}];
+
+    const SLIDERS = [
+      { key: "traffic", label: "Direct Traffic Shock (%)", min: -30, max: 30, step: 1, fmt: v => `${v >= 0 ? "+" : ""}${v}%` },
+      { key: "summer", label: "Extra Jun–Sep Peak Modifier (%)", min: -30, max: 25, step: 1, fmt: v => `${v >= 0 ? "+" : ""}${v}%` },
+      { key: "fx", label: "CAD per USD Exchange Rate", min: 1.25, max: 1.55, step: 0.01, fmt: v => `${Number(v).toFixed(2)} CAD` },
+      { key: "unemp", label: "AB Unemployment Shock (pp)", min: -3.0, max: 4.0, step: 0.25, fmt: v => `${v >= 0 ? "+" : ""}${Number(v).toFixed(2)} pp` },
+      { key: "hosp", label: "AB Real Hospitality Shock (%)", min: -20, max: 20, step: 1, fmt: v => `${v >= 0 ? "+" : ""}${v}%` },
+      { key: "temp", label: "Temperature Shift (°C)", min: -3, max: 4, step: 0.5, fmt: v => `${v >= 0 ? "+" : ""}${Number(v).toFixed(1)}°C` },
+      { key: "precip", label: "Precipitation Change (%)", min: -60, max: 60, step: 5, fmt: v => `${v >= 0 ? "+" : ""}${v}%` },
+      { key: "shift", label: "Garbage → Food Capture (%)", min: 0, max: 40, step: 1, fmt: v => `${v}%` },
+      { key: "red", label: "Zero-Waste Source Reduction (%)", min: 0, max: 15, step: 0.5, fmt: v => `${Number(v).toFixed(1)}%` }
+    ];
+
+    let state = { ...PRESETS[0], activePreset: "base" };
+    let pinnedState = null;
+    let pinnedSim = null;
+    let currentSim = [];
+    let hoverIdx = null;
+    let cvFilter = "All";
+
+    function simulatePreset(cfg) {
+      return RAW_DATA.map(d => {
+        const isFwd = d.ph === "fwd";
+        const isSum = [6, 7, 8, 9].includes(d.m);
+        const active = isFwd && (!cfg.summerOnly || isSum);
+        if (!active) {
+          return { ...d, sv: d.v, sf: d.f, sg: d.g, so: d.o, sc: d.f + d.g + d.o };
+        }
+        const dTemp = cfg.temp;
+        const pBase = Math.max(0, d.p);
+        const pScen = Math.max(0, pBase * (1 + cfg.precip / 100));
+        const dLogPrec = Math.log1p(pScen) - Math.log1p(pBase);
+        const dLogFx = cfg.fx ? (Math.log(cfg.fx) - Math.log(d.fx)) : 0;
+        const dUnemp = cfg.unemp || 0;
+        const dLogHosp = Math.log1p(cfg.hosp / 100);
+
+        const baseFrac = cfg.traffic / 100 + (isSum ? cfg.summer / 100 : 0);
+        const dirMult = Math.min(3.0, Math.max(0.1, 1 + baseFrac));
+        const ev = ELAST["Total Vehicles"];
+        const indVehLog = ev.temp_anom * dTemp + ev.log1p_precip * dLogPrec + ev.fx * dLogFx + ev.unemp * dUnemp;
+        const sv = d.v * dirMult * Math.exp(indVehLog);
+        const dLogVeh = Math.log(Math.max(1, sv)) - Math.log(Math.max(1, d.v));
+
+        const stage2 = (k, baseVal) => {
+          const e = ELAST[k];
+          const lm = Math.max(0, e.log_vehicles) * dLogVeh + e.temp_anom * dTemp + e.log1p_precip * dLogPrec + Math.max(0, e.log_foodsvc_real) * dLogHosp;
+          return baseVal * Math.exp(lm);
+        };
+
+        let sf = stage2("Total Food Waste", d.f);
+        let sg = stage2("Total Garbage", d.g);
+        let so = stage2("Other Diversion", d.o);
+
+        const redF = 1 - cfg.red / 100;
+        sg *= redF; sf *= redF; so *= redF;
+        const divT = sg * Math.min(0.8, Math.max(0, cfg.shift / 100));
+        sg -= divT;
+        sf += 0.75 * divT;
+        const sc = sf + sg + so;
+
+        return { ...d, sv, sf, sg, so, sc };
+      });
+    }
+
+    function fmtNum(v, decimals = 0) {
+      return Number(v).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function serializeStateToHash() {
+      const z = document.getElementById("zoomMode").value;
+      const pi = document.getElementById("piMode").value;
+      const p = new URLSearchParams({
+        p: state.activePreset,
+        t: state.traffic, s: state.summer, fx: state.fx.toFixed(2),
+        u: state.unemp, h: state.hosp, c: state.temp,
+        pr: state.precip, sh: state.shift, r: state.red,
+        so: state.summerOnly ? 1 : 0, z, pi
+      });
+      try { history.replaceState(null, "", "#" + p.toString()); } catch (e) {}
+    }
+
+    function restoreStateFromHash() {
+      if (!window.location.hash || window.location.hash.length < 3) return;
+      try {
+        const p = new URLSearchParams(window.location.hash.slice(1));
+        if (p.has("z")) document.getElementById("zoomMode").value = p.get("z");
+        if (p.has("pi")) document.getElementById("piMode").value = p.get("pi");
+        if (p.has("t")) state.traffic = parseFloat(p.get("t"));
+        if (p.has("s")) state.summer = parseFloat(p.get("s"));
+        if (p.has("fx")) state.fx = parseFloat(p.get("fx"));
+        if (p.has("u")) state.unemp = parseFloat(p.get("u"));
+        if (p.has("h")) state.hosp = parseFloat(p.get("h"));
+        if (p.has("c")) state.temp = parseFloat(p.get("c"));
+        if (p.has("pr")) state.precip = parseFloat(p.get("pr"));
+        if (p.has("sh")) state.shift = parseFloat(p.get("sh"));
+        if (p.has("r")) state.red = parseFloat(p.get("r"));
+        if (p.has("so")) state.summerOnly = p.get("so") === "1";
+        if (p.has("p")) state.activePreset = p.get("p");
+      } catch (e) {}
+    }
+
+    function renderMiniElastGrid() {
+      const ev = ELAST["Total Vehicles"];
+      const ef = ELAST["Total Food Waste"];
+      const eg = ELAST["Total Garbage"];
+      const eo = ELAST["Other Diversion"];
+      document.getElementById("miniElastGrid").innerHTML = `
+        <div class="mini-cell">CAD/USD &rarr; Veh: <strong>+${ev.fx.toFixed(2)}</strong></div>
+        <div class="mini-cell">AB Unemp &rarr; Veh: <strong>${(ev.unemp*100).toFixed(1)}%/pp</strong></div>
+        <div class="mini-cell">Veh &rarr; Food / Garb: <strong>+${ef.log_vehicles.toFixed(2)} / +${eg.log_vehicles.toFixed(2)}</strong></div>
+        <div class="mini-cell">Veh &rarr; Other Div.: <strong>+${eo.log_vehicles.toFixed(2)}</strong></div>
+      `;
+    }
+
+    function renderControls() {
+      const presetRow = document.getElementById("presetRow");
+      presetRow.innerHTML = "";
+      PRESETS.forEach(p => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `preset-chip ${state.activePreset === p.id ? "active" : ""}`;
+        btn.textContent = p.label;
+        btn.onclick = () => {
+          state = { ...p, activePreset: p.id };
+          syncSliderDom();
+          renderControls();
+          updateAll();
+        };
+        presetRow.appendChild(btn);
+      });
+
+      const cur = PRESETS.find(p => p.id === state.activePreset);
+      document.getElementById("presetDesc").textContent = cur ? cur.desc : "Custom interactive parameter combination.";
+
+      const stack = document.getElementById("sliderStack");
+      if (!stack.children.length) {
+        SLIDERS.forEach(s => {
+          const wrap = document.createElement("div");
+          wrap.className = "slider-item";
+          wrap.innerHTML = `
+            <div class="slider-row">
+              <label for="sl-${s.key}">${s.label}</label>
+              <span id="val-${s.key}" class="mono"></span>
+            </div>
+            <input id="sl-${s.key}" type="range" min="${s.min}" max="${s.max}" step="${s.step}" />
+          `;
+          wrap.querySelector("input").oninput = e => {
+            state[s.key] = parseFloat(e.target.value);
+            state.activePreset = "custom";
+            document.getElementById(`val-${s.key}`).textContent = s.fmt(state[s.key]);
+            renderControls();
+            updateAll();
+          };
+          stack.appendChild(wrap);
+        });
+        document.getElementById("chkSummerOnly").onchange = e => {
+          state.summerOnly = e.target.checked;
+          state.activePreset = "custom";
+          renderControls();
+          updateAll();
+        };
+      }
+      syncSliderDom();
+    }
+
+    function syncSliderDom() {
+      SLIDERS.forEach(s => {
+        document.getElementById(`sl-${s.key}`).value = state[s.key];
+        document.getElementById(`val-${s.key}`).textContent = s.fmt(state[s.key]);
+      });
+      document.getElementById("chkSummerOnly").checked = !!state.summerOnly;
+    }
+
+    function getVisibleSim() {
+      const z = Number(document.getElementById("zoomMode").value);
+      const minIdx = currentSim.findIndex(r => r.y >= z);
+      const start = Math.max(0, minIdx);
+      return {
+        visSim: currentSim.slice(start),
+        visPin: pinnedSim ? pinnedSim.slice(start) : null
+      };
+    }
+
+    function renderKpis(sim) {
+      const y27 = sim.filter(r => r.y === 2027);
+      const y24 = sim.filter(r => r.y === 2024);
+      const pinY27 = pinnedSim ? pinnedSim.filter(r => r.y === 2027) : null;
+      const specs = [
+        { k: "v", sk: "sv", title: "2027 Vehicles", unit: "veh", dec: 0 },
+        { k: "f", sk: "sf", title: "2027 Food Waste", unit: "t", dec: 1 },
+        { k: "g", sk: "sg", title: "2027 Garbage", unit: "t", dec: 1 },
+        { k: "o", sk: "so", title: "2027 Other Div.", unit: "t", dec: 1 },
+        { k: "c", sk: "sc", title: "2027 Collection", unit: "t", dec: 1 }
+      ];
+      const grid = document.getElementById("kpiGrid");
+      grid.innerHTML = "";
+      specs.forEach(sp => {
+        const baseSum = y27.reduce((a, b) => a + b[sp.k], 0);
+        const scenSum = y27.reduce((a, b) => a + b[sp.sk], 0);
+        const act24 = y24.reduce((a, b) => a + b[sp.k], 0);
+        const pct = (scenSum / baseSum - 1) * 100;
+        const pct24 = (scenSum / act24 - 1) * 100;
+        const pctTxt = Math.abs(pct) < 0.05 ? "0.0% Base" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
+        const cls = Math.abs(pct) < 0.05 ? "" : (pct > 0 ? "warn" : "good");
+
+        let subTxt = `Base: ${fmtNum(baseSum, sp.dec)} &middot; vs '24: ${pct24 >= 0 ? "+" : ""}${pct24.toFixed(1)}%`;
+        if (pinY27) {
+          const pinSum = pinY27.reduce((a, b) => a + b[sp.sk], 0);
+          const diffAB = ((scenSum / pinSum) - 1) * 100;
+          subTxt = `vs Pin B (${fmtNum(pinSum, sp.dec)}): ${diffAB >= 0 ? "+" : ""}${diffAB.toFixed(1)}%`;
+        }
+
+        const card = document.createElement("div");
+        card.className = "card kpi-card";
+        card.innerHTML = `
+          <div class="kpi-head">
+            <span>${sp.title}</span>
+            <span class="kpi-delta mono ${cls}">${pctTxt}</span>
+          </div>
+          <div class="kpi-val mono">
+            ${fmtNum(scenSum, sp.dec)}<span class="kpi-unit">${sp.unit}</span>
+          </div>
+          <div class="kpi-sub mono">${subTxt}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      const maxGap = Math.max(...y27.map(r => Math.abs((r.sf + r.sg + r.so) - r.sc)));
+      document.getElementById("coherenceBadge").textContent = `F+G+O = C (${maxGap.toFixed(3)} t)`;
+    }
+
+    function drawChart(canvasId, baseKey, scenKey) {
+      const canvas = document.getElementById(canvasId);
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (!w || !h) return;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const cActual = cssVar("--accent-actual");
+      const cBridge = cssVar("--accent-bridge");
+      const cBase = cssVar("--accent-base");
+      const cScen = cssVar("--accent-scen");
+      const cPin = cssVar("--accent-pin");
+      const cMuted = cssVar("--muted");
+      const cBorder = cssVar("--border");
+      const cFwdBg = cssVar("--fwd-band");
+
+      const { visSim, visPin } = getVisibleSim();
+      const piChoice = document.getElementById("piMode").value;
+      const loKey = piChoice === "none" ? null : `${baseKey}${piChoice}l`;
+      const hiKey = piChoice === "none" ? null : `${baseKey}${piChoice}h`;
+
+      const pad = { l: 52, r: 12, t: 12, b: 24 };
+      const pw = w - pad.l - pad.r;
+      const ph = h - pad.t - pad.b;
+      const n = visSim.length;
+
+      const vals = [];
+      visSim.forEach((r, idx) => {
+        vals.push(r[baseKey], r[scenKey]);
+        if (visPin && visPin[idx]) vals.push(visPin[idx][scenKey]);
+        if (loKey && r[loKey] !== undefined) {
+          const mult = r.ph === "fwd" ? (r[scenKey] / Math.max(1e-6, r[baseKey])) : 1.0;
+          vals.push(r[loKey] * mult, r[hiKey] * mult);
+        }
+      });
+      const ymin = Math.min(...vals) * 0.92;
+      const ymax = Math.max(...vals) * 1.06;
+      const xAt = i => pad.l + (i / Math.max(1, n - 1)) * pw;
+      const yAt = v => pad.t + (1 - (v - ymin) / Math.max(1e-6, ymax - ymin)) * ph;
+
+      const fwdStartIdx = visSim.findIndex(r => r.ph === "fwd");
+      const bridgeStartIdx = baseKey === "v"
+        ? visSim.findIndex(r => r.ph === "bridge")
+        : visSim.findIndex(r => r.ph === "obs_t" || r.ph === "bridge");
+      const fwdCutIdx = fwdStartIdx > 0 ? fwdStartIdx - 1 : fwdStartIdx;
+
+      // Subtle shaded region for forward counterfactual window
+      if (fwdCutIdx >= 0) {
+        ctx.fillStyle = cFwdBg;
+        ctx.fillRect(xAt(fwdCutIdx), pad.t, pad.l + pw - xAt(fwdCutIdx), ph);
+      }
+
+      // Horizontal Grid & Y ticks
+      ctx.font = "10.5px monospace";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let t = 0; t <= 4; t++) {
+        const vv = ymin + (t / 4) * (ymax - ymin);
+        const yy = yAt(vv);
+        ctx.strokeStyle = cBorder;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(w - pad.r, yy); ctx.stroke();
+        ctx.fillStyle = cMuted;
+        const lbl = baseKey === "v" ? `${Math.round(vv / 1000)}k` : `${Math.round(vv)}`;
+        ctx.fillText(lbl, pad.l - 6, yy);
+      }
+
+      // Year ticks
+      const skipOddYears = n > 60;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      visSim.forEach((r, i) => {
+        if (r.m === 1) {
+          const xx = xAt(i);
+          ctx.strokeStyle = cBorder;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.moveTo(xx, pad.t); ctx.lineTo(xx, pad.t + ph); ctx.stroke();
+          if (!skipOddYears || r.y % 2 === 0 || r.y === 2027) {
+            ctx.fillStyle = cMuted;
+            ctx.fillText(String(r.y), xx + 12, pad.t + ph + 5);
+          }
+        }
+      });
+
+      // Vertical dashed cutoff at last observed/bridged month
+      if (fwdCutIdx >= 0) {
+        const xCut = xAt(fwdCutIdx);
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = cMuted;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(xCut, pad.t); ctx.lineTo(xCut, pad.t + ph); ctx.stroke();
+        ctx.restore();
+      }
+
+      // Scenario-scaled Conformal PI polygon
+      if (loKey) {
+        const bandPts = visSim.map((r, i) => {
+          if (r[loKey] === undefined) return null;
+          const mult = r.ph === "fwd" ? (r[scenKey] / Math.max(1e-6, r[baseKey])) : 1.0;
+          return { i, lo: r[loKey] * mult, hi: r[hiKey] * mult };
+        }).filter(Boolean);
+
+        if (bandPts.length > 0) {
+          ctx.save();
+          ctx.fillStyle = cBase;
+          ctx.globalAlpha = 0.16;
+          ctx.beginPath();
+          bandPts.forEach((o, j) => {
+            const x = xAt(o.i), y = yAt(o.hi);
+            j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          });
+          for (let j = bandPts.length - 1; j >= 0; j--) {
+            const o = bandPts[j];
+            ctx.lineTo(xAt(o.i), yAt(o.lo));
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Segment 1: Observed Actual
+      const obsLast = bridgeStartIdx >= 0
+        ? Math.max(0, bridgeStartIdx - 1)
+        : (fwdStartIdx > 0 ? fwdStartIdx - 1 : (fwdStartIdx === 0 ? -1 : n - 1));
+      if (obsLast >= 0) {
+        ctx.strokeStyle = cActual;
+        ctx.lineWidth = 1.9;
+        ctx.beginPath();
+        for (let i = 0; i <= obsLast; i++) {
+          const x = xAt(i), y = yAt(visSim[i][baseKey]);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      // Segment 2: Realized Driver / Nowcast Bridge
+      if (bridgeStartIdx >= 0) {
+        const seg2Start = Math.max(0, bridgeStartIdx - 1);
+        const seg2End = fwdStartIdx > 0 ? fwdStartIdx - 1 : n - 1;
+        if (seg2End >= seg2Start) {
+          ctx.strokeStyle = cBridge;
+          ctx.lineWidth = 2.1;
+          ctx.beginPath();
+          for (let i = seg2Start; i <= seg2End; i++) {
+            const x = xAt(i), y = yAt(visSim[i][baseKey]);
+            i === seg2Start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // Segment 3: Forward Baseline
+      if (fwdStartIdx >= 0) {
+        const seg3Start = Math.max(0, fwdStartIdx - 1);
+        ctx.strokeStyle = cBase;
+        ctx.lineWidth = 2.1;
+        ctx.beginPath();
+        for (let i = seg3Start; i < n; i++) {
+          const x = xAt(i), y = yAt(visSim[i][baseKey]);
+          i === seg3Start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      // Segment 4 (Optional): Pinned Scenario B Curve
+      if (visPin && fwdStartIdx > 0) {
+        ctx.save();
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = cPin;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let i = fwdStartIdx - 1; i < n; i++) {
+          const x = xAt(i), y = yAt(visPin[i][scenKey]);
+          i === fwdStartIdx - 1 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Segment 5: Active Scenario Dashed Curve
+      if (fwdStartIdx > 0) {
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = cScen;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let i = fwdStartIdx - 1; i < n; i++) {
+          const x = xAt(i), y = yAt(visSim[i][scenKey]);
+          i === fwdStartIdx - 1 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Hover Hairline & Points
+      if (hoverIdx !== null && hoverIdx >= 0 && hoverIdx < n) {
+        const r = visSim[hoverIdx];
+        const x = xAt(hoverIdx);
+        ctx.strokeStyle = cMuted;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ph); ctx.stroke();
+
+        ctx.fillStyle = cBase;
+        ctx.beginPath(); ctx.arc(x, yAt(r[baseKey]), 3.5, 0, Math.PI * 2); ctx.fill();
+        if (hoverIdx >= fwdStartIdx) {
+          ctx.fillStyle = cScen;
+          ctx.beginPath(); ctx.arc(x, yAt(r[scenKey]), 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
+    function renderAllCharts() {
+      drawChart("chart-v", "v", "sv");
+      drawChart("chart-f", "f", "sf");
+      drawChart("chart-g", "g", "sg");
+      drawChart("chart-o", "o", "so");
+      drawChart("chart-c", "c", "sc");
+    }
+
+    function updateHoverText() {
+      const globalBar = document.getElementById("globalHoverBar");
+      const { visSim } = getVisibleSim();
+      if (hoverIdx === null || !visSim[hoverIdx]) {
+        document.getElementById("hover-v").textContent = `Stage 1: ${WINNING_MODELS["Total Vehicles"]}`;
+        document.getElementById("hover-f").textContent = "MinT Coherent (Hybrid Ridge+LGBM)";
+        document.getElementById("hover-g").textContent = "MinT Coherent (#1 CV RMSE)";
+        document.getElementById("hover-o").textContent = "MinT Coherent (#1 CV RMSE)";
+        document.getElementById("hover-c").textContent = "MinT Reconciled (F+G+O = Total)";
+        globalBar.textContent = "Hover or touch any chart to inspect monthly values, conformal bounds & accounting sum";
+        return;
+      }
+      const r = visSim[hoverIdx];
+      const lblMap = { actual: "Observed Actual", obs_t: "Obs. Traffic / Est. Waste", bridge: "Hwy1 & Park Bridge", fwd: "Forward Forecast" };
+      const pFmt = (a, b) => Math.abs(b / a - 1) < 0.0005 ? "" : ` (${b >= a ? "+" : ""}${((b / a - 1) * 100).toFixed(1)}%)`;
+      document.getElementById("hover-v").textContent = `${fmtNum(r.sv, 0)}${pFmt(r.v, r.sv)}`;
+      document.getElementById("hover-f").textContent = `${fmtNum(r.sf, 1)} t${pFmt(r.f, r.sf)}`;
+      document.getElementById("hover-g").textContent = `${fmtNum(r.sg, 1)} t${pFmt(r.g, r.sg)}`;
+      document.getElementById("hover-o").textContent = `${fmtNum(r.so, 1)} t${pFmt(r.o, r.so)}`;
+      document.getElementById("hover-c").textContent = `${fmtNum(r.sc, 1)} t${pFmt(r.c, r.sc)}`;
+      const multV = r.ph === "fwd" ? (r.sv / Math.max(1e-6, r.v)) : 1.0;
+      const piTxt = r.v80l ? ` | 80% Veh PI: ${fmtNum(r.v80l * multV, 0)}–${fmtNum(r.v80h * multV, 0)}` : "";
+      globalBar.textContent = `${r.ds} [${lblMap[r.ph]}] — Veh: ${fmtNum(r.sv, 0)} | Food: ${fmtNum(r.sf, 1)} t + Garb: ${fmtNum(r.sg, 1)} t + Other: ${fmtNum(r.so, 1)} t = ${fmtNum(r.sc, 1)} t${piTxt}`;
+    }
+
+    function attachChartEvents() {
+      ["chart-v", "chart-f", "chart-g", "chart-o", "chart-c"].forEach(id => {
+        const c = document.getElementById(id);
+        const handleClientX = clientX => {
+          const { visSim } = getVisibleSim();
+          const rect = c.getBoundingClientRect();
+          const padL = 52, padR = 12;
+          const relX = (clientX - rect.left - padL) / Math.max(1, rect.width - padL - padR);
+          const idx = Math.max(0, Math.min(visSim.length - 1, Math.round(relX * (visSim.length - 1))));
+          if (idx !== hoverIdx) {
+            hoverIdx = idx;
+            updateHoverText();
+            renderAllCharts();
+          }
+        };
+        c.onmousemove = e => handleClientX(e.clientX);
+        c.ontouchmove = e => {
+          if (e.touches && e.touches.length) {
+            e.preventDefault();
+            handleClientX(e.touches[0].clientX);
+          }
+        };
+        c.onmouseleave = () => { hoverIdx = null; updateHoverText(); renderAllCharts(); };
+        c.ontouchend = () => { hoverIdx = null; updateHoverText(); renderAllCharts(); };
+      });
+    }
+
+    function renderStaticTables() {
+      const pills = document.getElementById("cvFilterPills");
+      const targets = ["All", "Total Vehicles", "Total Food Waste", "Total Garbage", "Other Diversion", "Total Collection"];
+      pills.innerHTML = "";
+      targets.forEach(t => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `preset-chip ${cvFilter === t ? "active" : ""}`;
+        b.textContent = t;
+        b.onclick = () => { cvFilter = t; renderStaticTables(); };
+        pills.appendChild(b);
+      });
+
+      const tbody = document.querySelector("#cvTable tbody");
+      tbody.innerHTML = "";
+      const rows = cvFilter === "All" ? CV_SUMMARY : CV_SUMMARY.filter(r => r.target === cvFilter);
+      rows.forEach(r => {
+        const isWin = WINNING_MODELS[r.target] === r.model;
+        const isMinT = r.model === "MinT_Coherent";
+        const tr = document.createElement("tr");
+        if (isWin || isMinT) tr.className = "win-row";
+        const dec = r.target === "Total Vehicles" ? 0 : 2;
+        const badge = isMinT
+          ? '<span class="mint-badge">MinT</span>'
+          : (isWin ? '<span class="win-badge">#1 CV</span>' : "");
+        tr.innerHTML = `
+          <td>${r.target}</td>
+          <td class="mono">${r.model}${badge}</td>
+          <td class="num">${fmtNum(r.MAE, dec)}</td>
+          <td class="num">${fmtNum(r.RMSE, dec)}</td>
+          <td class="num">${r.MAPE.toFixed(2)}%</td>
+          <td class="num">${r.sMAPE.toFixed(2)}%</td>
+          <td class="num">${r.MASE.toFixed(2)}</td>
+          <td class="num">${r.Bias_pct >= 0 ? "+" : ""}${r.Bias_pct.toFixed(2)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const dBody = document.querySelector("#diagTable tbody");
+      dBody.innerHTML = "";
+      DIAG_ROWS.forEach(r => {
+        const tr = document.createElement("tr");
+        const tv = r["Traffic Elasticity"] === "" ? "—" : `+${Number(r["Traffic Elasticity"]).toFixed(3)}`;
+        const uCol = r["AB Unemp Coef (/+1pp)"] === "" ? "—" : Number(r["AB Unemp Coef (/+1pp)"]).toFixed(4);
+        tr.innerHTML = `
+          <td>${r.Target}</td>
+          <td class="num">${r.n}</td>
+          <td class="num">${tv}</td>
+          <td class="num">${Number(r["Temp Coef (/+1C)"]).toFixed(4)}</td>
+          <td class="num">${Number(r["Precip Elasticity"]).toFixed(4)}</td>
+          <td class="num">${Number(r["Macro/FX Elasticity"]).toFixed(3)}</td>
+          <td class="num">${uCol}</td>
+          <td class="num">${Number(r["AR(1) Phi"]).toFixed(3)}</td>
+          <td class="num">${Number(r["Log R2"]).toFixed(3)}</td>
+          <td class="num">${Number(r["Durbin-Watson"]).toFixed(3)}</td>
+          <td class="num">${Number(r["Ljung-Box p(12)"]).toFixed(3)}</td>
+        `;
+        dBody.appendChild(tr);
+      });
+
+      const aBody = document.querySelector("#auditTable tbody");
+      aBody.innerHTML = "";
+      AUDIT_ROWS.forEach(r => {
+        const tr = document.createElement("tr");
+        if (r.ds === 2024) tr.className = "win-row";
+        const fmtDiff = v => `${v > 0 ? "+" : ""}${fmtNum(v, 3)}`;
+        tr.innerHTML = `
+          <td class="mono">${r.ds}</td>
+          <td class="num">${fmtNum(r["Total Collection_clean"], 3)}</td>
+          <td class="num">${fmtNum(r["Total Collection_legacy"], 3)}</td>
+          <td class="num">${fmtDiff(r["Total Collection_diff"])}</td>
+          <td class="num">${fmtDiff(r["Total Garbage_diff"])}</td>
+          <td class="num">${fmtDiff(r["Total Food Waste_diff"])}</td>
+        `;
+        aBody.appendChild(tr);
+      });
+    }
+
+    function downloadCsv(filename, headers, matrixRows) {
+      const escape = v => {
+        const s = v === null || v === undefined ? "" : String(v);
+        return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [headers.join(","), ...matrixRows.map(row => row.map(escape).join(","))];
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function setupDownloads() {
+      const exportActive = () => {
+        const slug = (state.activePreset || "custom").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        downloadCsv(
+          `banff_scenario_${slug}_2018_2027.csv`,
+          ["month", "phase", "base_vehicles", "scen_vehicles", "base_food_t", "scen_food_t", "base_garbage_t", "scen_garbage_t", "base_other_div_t", "scen_other_div_t", "base_collection_t", "scen_collection_t"],
+          currentSim.map(r => [r.ds, r.ph, r.v.toFixed(1), r.sv.toFixed(1), r.f.toFixed(2), r.sf.toFixed(2), r.g.toFixed(2), r.sg.toFixed(2), r.o.toFixed(2), r.so.toFixed(2), r.c.toFixed(2), r.sc.toFixed(2)])
+        );
+      };
+      document.getElementById("btnExportActiveCsv").onclick = exportActive;
+      document.getElementById("dlActive").onclick = exportActive;
+
+      document.getElementById("dlBase").onclick = () => {
+        const rows = RAW_DATA.filter(r => r.y >= 2025);
+        downloadCsv(
+          "banff_baseline_monthly_2025_2027.csv",
+          ["month", "phase", "total_vehicles", "v_pi80_lo", "v_pi80_hi", "v_pi95_lo", "v_pi95_hi", "food_waste_t", "f_pi80_lo", "f_pi80_hi", "garbage_t", "g_pi80_lo", "g_pi80_hi", "other_div_t", "o_pi80_lo", "o_pi80_hi", "collection_t", "c_pi80_lo", "c_pi80_hi"],
+          rows.map(r => [r.ds, r.ph, r.v, r.v80l ?? "", r.v80h ?? "", r.v95l ?? "", r.v95h ?? "", r.f, r.f80l ?? "", r.f80h ?? "", r.g, r.g80l ?? "", r.g80h ?? "", r.o, r.o80l ?? "", r.o80h ?? "", r.c, r.c80l ?? "", r.c80h ?? ""])
+        );
+      };
+
+      document.getElementById("dlPresets27").onclick = () => {
+        downloadCsv(
+          "banff_scenarios_annual_2027.csv",
+          ["scenario", "Total Vehicles", "Total Food Waste", "Total Garbage", "Total Collection", "Other Diversion", "Veh % vs Base", "Food % vs Base", "Garbage % vs Base", "Collection % vs Base", "Other Div % vs Base"],
+          SCEN27.map(r => [
+            r.scenario, Number(r["Total Vehicles"]).toFixed(1), Number(r["Total Food Waste"]).toFixed(2), Number(r["Total Garbage"]).toFixed(2),
+            Number(r["Total Collection"]).toFixed(2), Number(r["Other Diversion"]).toFixed(2),
+            Number(r["Total Vehicles (% vs Base)"]).toFixed(2), Number(r["Total Food Waste (% vs Base)"]).toFixed(2),
+            Number(r["Total Garbage (% vs Base)"]).toFixed(2), Number(r["Total Collection (% vs Base)"]).toFixed(2),
+            Number(r["Other Diversion (% vs Base)"]).toFixed(2)
+          ])
+        );
+      };
+
+      document.getElementById("dlCvDiag").onclick = () => {
+        downloadCsv(
+          "banff_cv_summary_metrics.csv",
+          ["target", "model", "MAE", "RMSE", "MAPE", "sMAPE", "MASE", "Bias_pct"],
+          CV_SUMMARY.map(r => [r.target, r.model, r.MAE, r.RMSE, r.MAPE, r.sMAPE, r.MASE, r.Bias_pct])
+        );
+      };
+    }
+
+    function setupTabsPinAndTheme() {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+          if (btn.dataset.tab === "sim") renderAllCharts();
+        };
+      });
+
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const setTheme = th => {
+        document.documentElement.setAttribute("data-theme", th);
+        document.getElementById("btnTheme").textContent = th === "dark" ? "Light Mode" : "Dark Mode";
+        renderAllCharts();
+      };
+      setTheme(prefersDark ? "dark" : "light");
+      document.getElementById("btnTheme").onclick = () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        setTheme(cur === "dark" ? "light" : "dark");
+      };
+
+      document.getElementById("zoomMode").onchange = () => { hoverIdx = null; updateAll(); };
+      document.getElementById("piMode").onchange = () => { serializeStateToHash(); renderAllCharts(); };
+
+      const btnPin = document.getElementById("btnPinB");
+      btnPin.onclick = () => {
+        if (pinnedState) {
+          pinnedState = null;
+          pinnedSim = null;
+          btnPin.classList.remove("active");
+          btnPin.textContent = "Pin as Scenario B";
+          document.getElementById("pinLegendItem").style.display = "none";
+        } else {
+          pinnedState = { ...state };
+          pinnedSim = simulatePreset(pinnedState);
+          btnPin.classList.add("active");
+          btnPin.textContent = "Clear Pin B";
+          const curP = PRESETS.find(p => p.id === pinnedState.activePreset);
+          document.getElementById("pinLegendLabel").textContent = `Scenario B: ${curP ? curP.label : "Custom"}`;
+          document.getElementById("pinLegendItem").style.display = "inline-flex";
+        }
+        updateAll();
+      };
+
+      const btnCopy = document.getElementById("btnCopyLink");
+      btnCopy.onclick = async () => {
+        serializeStateToHash();
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(window.location.href);
+            btnCopy.textContent = "Copied URL!";
+            setTimeout(() => { btnCopy.textContent = "Copy Share Link"; }, 1800);
+          }
+        } catch (e) {}
+      };
+    }
+
+    function updateAll() {
+      currentSim = simulatePreset(state);
+      serializeStateToHash();
+      renderKpis(currentSim);
+      updateHoverText();
+      renderAllCharts();
+    }
+
+    if (typeof document !== "undefined") {
+      document.getElementById("btnReset").onclick = () => {
+        state = { ...PRESETS[0], activePreset: "base" };
+        renderControls();
+        updateAll();
+      };
+      window.addEventListener("resize", renderAllCharts);
+      restoreStateFromHash();
+      renderMiniElastGrid();
+      renderControls();
+      attachChartEvents();
+      renderStaticTables();
+      setupDownloads();
+      setupTabsPinAndTheme();
+      updateAll();
+    }
+  </script>
+</body>
+</html>
