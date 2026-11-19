@@ -1,5 +1,9 @@
 # Town of Banff — Interactive Forecast & What-If Scenario Explorer
 
+<p align="center">
+  <img src="readme_banner.png" alt="Banff Forecasting — Town of Banff Monthly Traffic & Municipal Waste Forecasting Banner" width="100%" />
+</p>
+
 Public web explorer, methodological documentation, forecast CSV deliverables, and diagnostic figures for the Town of Banff monthly visitation and municipal waste forecasting pipeline.
 
 **Live Interactive Explorer (GitHub Pages):** <https://v-datos.github.io/banff-forecasting-explorer/>
